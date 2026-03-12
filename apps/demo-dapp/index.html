@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WalletCast Demo</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --border: #2a2a2a;
+      --text: #e0e0e0;
+      --accent: #6366f1;
+      --accent-dim: #4f46e5;
+      --success: #22c55e;
+      --error: #ef4444;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 520px;
+      width: 100%;
+      padding: 2rem;
+    }
+    h1 {
+      font-size: 1.75rem;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .card h2 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #888;
+      margin-bottom: 1rem;
+    }
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      width: 100%;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    button:hover { background: var(--accent-dim); }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .uri-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      font-family: monospace;
+      font-size: 0.75rem;
+      word-break: break-all;
+      color: var(--accent);
+      margin-top: 1rem;
+    }
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--error);
+    }
+    .dot.connected { background: var(--success); }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: #888; }
+    .info-value { font-family: monospace; }
+    #log {
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.75rem;
+      line-height: 1.6;
+      color: #888;
+    }
+    #log div { padding: 0.1rem 0; }
+    #log .error { color: var(--error); }
+    #log .success { color: var(--success); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>WalletCast</h1>
+    <p class="subtitle">Decentralized wallet connection — no relay servers</p>
+
+    <div class="card">
+      <h2>Connection</h2>
+      <div class="status">
+        <div class="dot" id="statusDot"></div>
+        <span id="statusText">Disconnected</span>
+      </div>
+      <button id="initBtn">Generate Connection URI</button>
+      <div id="uriContainer" style="display:none">
+        <div class="uri-box" id="uriDisplay"></div>
+      </div>
+    </div>
+
+    <div class="card" id="accountCard" style="display:none">
+      <h2>Wallet Info</h2>
+      <div class="info-row">
+        <span class="info-label">Account</span>
+        <span class="info-value" id="accountAddr">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Chain ID</span>
+        <span class="info-value" id="chainId">—</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Event Log</h2>
+      <div id="log"></div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

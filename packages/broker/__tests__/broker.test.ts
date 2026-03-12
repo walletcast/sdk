@@ -5,7 +5,7 @@ import type {
   WalletCastURI,
   KeyPair,
 } from '@walletcast/types';
-import { WalletCastErrorCode } from '@walletcast/types';
+import { WalletCastError, WalletCastErrorCode } from '@walletcast/types';
 
 // Mock all dependencies
 vi.mock('@walletcast/nostr-signaling', () => ({
@@ -108,140 +108,415 @@ describe('SovereignBroker', () => {
     expect(broker).toBeDefined();
   });
 
-  it('connect() publishes offer and waits for answer', async () => {
-    // Simulate the nostr signaler delivering an answer
-    mockNostrSignaler.subscribe.mockImplementation(
-      async (_pubKey: string, onMessage: (msg: SignalingMessage) => void) => {
-        // Deliver answer immediately
-        setTimeout(() => {
-          onMessage({
-            kind: 'sdp',
-            payload: {
-              type: 'answer',
-              sdp: 'v=0\r\nanswer-sdp',
-              senderPubKey: mockUri.publicKey,
-              recipientPubKey: mockKeypair.publicKeyHex,
-              nonce: 'test',
-              timestamp: Date.now(),
-            },
-          });
-        }, 10);
-        return () => {};
-      },
-    );
+  describe('connect()', () => {
+    it('publishes offer and waits for answer', async () => {
+      // Simulate the nostr signaler delivering an answer
+      mockNostrSignaler.subscribe.mockImplementation(
+        async (_pubKey: string, onMessage: (msg: SignalingMessage) => void) => {
+          // Deliver answer immediately
+          setTimeout(() => {
+            onMessage({
+              kind: 'sdp',
+              payload: {
+                type: 'answer',
+                sdp: 'v=0\r\nanswer-sdp',
+                senderPubKey: mockUri.publicKey,
+                recipientPubKey: mockKeypair.publicKeyHex,
+                nonce: 'test',
+                timestamp: Date.now(),
+              },
+            });
+          }, 10);
+          return () => {};
+        },
+      );
 
-    const { SovereignBroker } = await import('../src/broker.js');
-    const broker = new SovereignBroker({
-      keypair: mockKeypair,
-      nostrRelays: ['wss://relay.test'],
-      timeout: 5000,
+      const { SovereignBroker } = await import('../src/broker.js');
+      const broker = new SovereignBroker({
+        keypair: mockKeypair,
+        nostrRelays: ['wss://relay.test'],
+        timeout: 5000,
+      });
+
+      const channel = await broker.connect(mockUri);
+
+      expect(channel).toBeDefined();
+      expect(mockPeerConnection.createOffer).toHaveBeenCalled();
+      expect(mockNostrSignaler.publish).toHaveBeenCalled();
+      expect(mockPeerConnection.setRemoteAnswer).toHaveBeenCalledWith(
+        'v=0\r\nanswer-sdp',
+      );
     });
 
-    const channel = await broker.connect(mockUri);
+    it('publishes offer with correct sender and recipient keys', async () => {
+      mockNostrSignaler.subscribe.mockImplementation(
+        async (_pubKey: string, onMessage: (msg: SignalingMessage) => void) => {
+          setTimeout(() => {
+            onMessage({
+              kind: 'sdp',
+              payload: {
+                type: 'answer',
+                sdp: 'v=0\r\nanswer-sdp',
+                senderPubKey: mockUri.publicKey,
+                recipientPubKey: mockKeypair.publicKeyHex,
+                nonce: 'test',
+                timestamp: Date.now(),
+              },
+            });
+          }, 10);
+          return () => {};
+        },
+      );
 
-    expect(channel).toBeDefined();
-    expect(mockPeerConnection.createOffer).toHaveBeenCalled();
-    expect(mockNostrSignaler.publish).toHaveBeenCalled();
-    expect(mockPeerConnection.setRemoteAnswer).toHaveBeenCalledWith(
-      'v=0\r\nanswer-sdp',
-    );
+      const { SovereignBroker } = await import('../src/broker.js');
+      const broker = new SovereignBroker({
+        keypair: mockKeypair,
+        nostrRelays: ['wss://relay.test'],
+        timeout: 5000,
+      });
+
+      await broker.connect(mockUri);
+
+      const publishedMsg = mockNostrSignaler.publish.mock
+        .calls[0][0] as SignalingMessage;
+      expect(publishedMsg.kind).toBe('sdp');
+      expect(publishedMsg.payload.type).toBe('offer');
+      expect(publishedMsg.payload.senderPubKey).toBe(mockKeypair.publicKeyHex);
+      expect(publishedMsg.payload.recipientPubKey).toBe(mockUri.publicKey);
+    });
+
+    it('times out if no answer received', async () => {
+      const { SovereignBroker } = await import('../src/broker.js');
+      const broker = new SovereignBroker({
+        keypair: mockKeypair,
+        nostrRelays: ['wss://relay.test'],
+        timeout: 100,
+      });
+
+      await expect(broker.connect(mockUri)).rejects.toMatchObject({
+        code: WalletCastErrorCode.SIGNALING_TIMEOUT,
+      });
+    });
+
+    it('rejects with WalletCastError on timeout', async () => {
+      const { SovereignBroker } = await import('../src/broker.js');
+      const broker = new SovereignBroker({
+        keypair: mockKeypair,
+        nostrRelays: ['wss://relay.test'],
+        timeout: 50,
+      });
+
+      try {
+        await broker.connect(mockUri);
+        expect.unreachable('Should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(WalletCastError);
+        expect((err as WalletCastError).code).toBe(
+          WalletCastErrorCode.SIGNALING_TIMEOUT,
+        );
+        expect((err as WalletCastError).message).toContain('50ms');
+      }
+    });
+
+    it('ignores non-answer signaling messages while waiting', async () => {
+      mockNostrSignaler.subscribe.mockImplementation(
+        async (_pubKey: string, onMessage: (msg: SignalingMessage) => void) => {
+          setTimeout(() => {
+            // Send an offer (not an answer) — should be ignored
+            onMessage({
+              kind: 'sdp',
+              payload: {
+                type: 'offer',
+                sdp: 'wrong',
+                senderPubKey: 'someone',
+                recipientPubKey: mockKeypair.publicKeyHex,
+                nonce: 'x',
+                timestamp: Date.now(),
+              },
+            });
+          }, 5);
+          setTimeout(() => {
+            // Send an ICE message — should be ignored
+            onMessage({
+              kind: 'ice',
+              payload: {
+                candidate: 'candidate',
+                sdpMid: '0',
+                sdpMLineIndex: 0,
+                senderPubKey: 'someone',
+              },
+            });
+          }, 10);
+          setTimeout(() => {
+            // Finally send a proper answer
+            onMessage({
+              kind: 'sdp',
+              payload: {
+                type: 'answer',
+                sdp: 'v=0\r\ncorrect-answer',
+                senderPubKey: mockUri.publicKey,
+                recipientPubKey: mockKeypair.publicKeyHex,
+                nonce: 'test',
+                timestamp: Date.now(),
+              },
+            });
+          }, 15);
+          return () => {};
+        },
+      );
+
+      const { SovereignBroker } = await import('../src/broker.js');
+      const broker = new SovereignBroker({
+        keypair: mockKeypair,
+        nostrRelays: ['wss://relay.test'],
+        timeout: 5000,
+      });
+
+      const channel = await broker.connect(mockUri);
+      expect(channel).toBeDefined();
+      expect(mockPeerConnection.setRemoteAnswer).toHaveBeenCalledWith(
+        'v=0\r\ncorrect-answer',
+      );
+    });
   });
 
-  it('connect() times out if no answer received', async () => {
-    const { SovereignBroker } = await import('../src/broker.js');
-    const broker = new SovereignBroker({
-      keypair: mockKeypair,
-      nostrRelays: ['wss://relay.test'],
-      timeout: 100,
+  describe('listen()', () => {
+    it('subscribes and handles incoming offers', async () => {
+      mockNostrSignaler.subscribe.mockImplementation(
+        async (_pubKey: string, onMessage: (msg: SignalingMessage) => void) => {
+          setTimeout(() => {
+            onMessage({
+              kind: 'sdp',
+              payload: {
+                type: 'offer',
+                sdp: 'v=0\r\noffer-sdp',
+                senderPubKey: mockUri.publicKey,
+                recipientPubKey: mockKeypair.publicKeyHex,
+                nonce: 'test-nonce',
+                timestamp: Date.now(),
+              },
+            });
+          }, 10);
+          return () => {};
+        },
+      );
+
+      const { SovereignBroker } = await import('../src/broker.js');
+      const broker = new SovereignBroker({
+        keypair: mockKeypair,
+        nostrRelays: ['wss://relay.test'],
+      });
+
+      const onIncoming = vi.fn();
+      await broker.listen(onIncoming);
+
+      // Wait for the async offer handling
+      await new Promise((r) => setTimeout(r, 100));
+
+      expect(mockPeerConnection.createAnswer).toHaveBeenCalledWith(
+        'v=0\r\noffer-sdp',
+      );
+      expect(mockNostrSignaler.publish).toHaveBeenCalled();
+      expect(onIncoming).toHaveBeenCalled();
     });
 
-    await expect(broker.connect(mockUri)).rejects.toMatchObject({
-      code: WalletCastErrorCode.SIGNALING_TIMEOUT,
+    it('sends answer back with correct keys and nonce', async () => {
+      mockNostrSignaler.subscribe.mockImplementation(
+        async (_pubKey: string, onMessage: (msg: SignalingMessage) => void) => {
+          setTimeout(() => {
+            onMessage({
+              kind: 'sdp',
+              payload: {
+                type: 'offer',
+                sdp: 'v=0\r\noffer-sdp',
+                senderPubKey: 'remote-sender-key',
+                recipientPubKey: mockKeypair.publicKeyHex,
+                nonce: 'original-nonce',
+                timestamp: Date.now(),
+              },
+            });
+          }, 10);
+          return () => {};
+        },
+      );
+
+      const { SovereignBroker } = await import('../src/broker.js');
+      const broker = new SovereignBroker({
+        keypair: mockKeypair,
+        nostrRelays: ['wss://relay.test'],
+      });
+
+      await broker.listen(vi.fn());
+      await new Promise((r) => setTimeout(r, 100));
+
+      const answerMsg = mockNostrSignaler.publish.mock
+        .calls[0][0] as SignalingMessage;
+      expect(answerMsg.kind).toBe('sdp');
+      expect(answerMsg.payload.type).toBe('answer');
+      expect(answerMsg.payload.senderPubKey).toBe(mockKeypair.publicKeyHex);
+      expect(answerMsg.payload.recipientPubKey).toBe('remote-sender-key');
+      expect(answerMsg.payload.nonce).toBe('original-nonce');
+    });
+
+    it('ignores non-offer messages', async () => {
+      mockNostrSignaler.subscribe.mockImplementation(
+        async (_pubKey: string, onMessage: (msg: SignalingMessage) => void) => {
+          setTimeout(() => {
+            onMessage({
+              kind: 'sdp',
+              payload: {
+                type: 'answer',
+                sdp: 'v=0\r\nanswer',
+                senderPubKey: mockUri.publicKey,
+                recipientPubKey: mockKeypair.publicKeyHex,
+                nonce: 'x',
+                timestamp: Date.now(),
+              },
+            });
+          }, 10);
+          return () => {};
+        },
+      );
+
+      const { SovereignBroker } = await import('../src/broker.js');
+      const broker = new SovereignBroker({
+        keypair: mockKeypair,
+        nostrRelays: ['wss://relay.test'],
+      });
+
+      const onIncoming = vi.fn();
+      await broker.listen(onIncoming);
+
+      await new Promise((r) => setTimeout(r, 100));
+      expect(onIncoming).not.toHaveBeenCalled();
+    });
+
+    it('ignores ICE messages', async () => {
+      mockNostrSignaler.subscribe.mockImplementation(
+        async (_pubKey: string, onMessage: (msg: SignalingMessage) => void) => {
+          setTimeout(() => {
+            onMessage({
+              kind: 'ice',
+              payload: {
+                candidate: 'candidate:1 1 udp 2122260223 192.168.1.1 12345 typ host',
+                sdpMid: '0',
+                sdpMLineIndex: 0,
+                senderPubKey: mockUri.publicKey,
+              },
+            });
+          }, 10);
+          return () => {};
+        },
+      );
+
+      const { SovereignBroker } = await import('../src/broker.js');
+      const broker = new SovereignBroker({
+        keypair: mockKeypair,
+        nostrRelays: ['wss://relay.test'],
+      });
+
+      const onIncoming = vi.fn();
+      await broker.listen(onIncoming);
+
+      await new Promise((r) => setTimeout(r, 100));
+      expect(onIncoming).not.toHaveBeenCalled();
+      expect(mockPeerConnection.createAnswer).not.toHaveBeenCalled();
+    });
+
+    it('does not crash when handling an offer fails', async () => {
+      mockPeerConnection.createAnswer.mockRejectedValueOnce(
+        new Error('WebRTC failure'),
+      );
+
+      mockNostrSignaler.subscribe.mockImplementation(
+        async (_pubKey: string, onMessage: (msg: SignalingMessage) => void) => {
+          setTimeout(() => {
+            onMessage({
+              kind: 'sdp',
+              payload: {
+                type: 'offer',
+                sdp: 'bad-sdp',
+                senderPubKey: mockUri.publicKey,
+                recipientPubKey: mockKeypair.publicKeyHex,
+                nonce: 'test-nonce',
+                timestamp: Date.now(),
+              },
+            });
+          }, 10);
+          return () => {};
+        },
+      );
+
+      const { SovereignBroker } = await import('../src/broker.js');
+      const broker = new SovereignBroker({
+        keypair: mockKeypair,
+        nostrRelays: ['wss://relay.test'],
+      });
+
+      const onIncoming = vi.fn();
+      // Should not throw
+      await broker.listen(onIncoming);
+      await new Promise((r) => setTimeout(r, 100));
+
+      expect(onIncoming).not.toHaveBeenCalled();
     });
   });
 
-  it('listen() subscribes and handles incoming offers', async () => {
-    mockNostrSignaler.subscribe.mockImplementation(
-      async (_pubKey: string, onMessage: (msg: SignalingMessage) => void) => {
-        setTimeout(() => {
-          onMessage({
-            kind: 'sdp',
-            payload: {
-              type: 'offer',
-              sdp: 'v=0\r\noffer-sdp',
-              senderPubKey: mockUri.publicKey,
-              recipientPubKey: mockKeypair.publicKeyHex,
-              nonce: 'test-nonce',
-              timestamp: Date.now(),
-            },
-          });
-        }, 10);
-        return () => {};
-      },
-    );
+  describe('destroy()', () => {
+    it('cleans up both signalers', async () => {
+      const { SovereignBroker } = await import('../src/broker.js');
+      const broker = new SovereignBroker({
+        keypair: mockKeypair,
+        nostrRelays: ['wss://relay.test'],
+      });
 
-    const { SovereignBroker } = await import('../src/broker.js');
-    const broker = new SovereignBroker({
-      keypair: mockKeypair,
-      nostrRelays: ['wss://relay.test'],
+      await broker.destroy();
+
+      expect(mockNostrSignaler.destroy).toHaveBeenCalled();
+      expect(mockLibP2PSignaler.destroy).toHaveBeenCalled();
     });
 
-    const onIncoming = vi.fn();
-    await broker.listen(onIncoming);
+    it('closes peer connection if one was established', async () => {
+      mockNostrSignaler.subscribe.mockImplementation(
+        async (_pubKey: string, onMessage: (msg: SignalingMessage) => void) => {
+          setTimeout(() => {
+            onMessage({
+              kind: 'sdp',
+              payload: {
+                type: 'answer',
+                sdp: 'v=0\r\nanswer-sdp',
+                senderPubKey: mockUri.publicKey,
+                recipientPubKey: mockKeypair.publicKeyHex,
+                nonce: 'test',
+                timestamp: Date.now(),
+              },
+            });
+          }, 10);
+          return () => {};
+        },
+      );
 
-    // Wait for the async offer handling
-    await new Promise((r) => setTimeout(r, 100));
+      const { SovereignBroker } = await import('../src/broker.js');
+      const broker = new SovereignBroker({
+        keypair: mockKeypair,
+        nostrRelays: ['wss://relay.test'],
+        timeout: 5000,
+      });
 
-    expect(mockPeerConnection.createAnswer).toHaveBeenCalledWith(
-      'v=0\r\noffer-sdp',
-    );
-    expect(mockNostrSignaler.publish).toHaveBeenCalled();
-    expect(onIncoming).toHaveBeenCalled();
-  });
+      await broker.connect(mockUri);
+      await broker.destroy();
 
-  it('destroy() cleans up all resources', async () => {
-    const { SovereignBroker } = await import('../src/broker.js');
-    const broker = new SovereignBroker({
-      keypair: mockKeypair,
-      nostrRelays: ['wss://relay.test'],
+      expect(mockPeerConnection.close).toHaveBeenCalled();
     });
 
-    await broker.destroy();
+    it('works when no peer connection was established', async () => {
+      const { SovereignBroker } = await import('../src/broker.js');
+      const broker = new SovereignBroker({
+        keypair: mockKeypair,
+        nostrRelays: ['wss://relay.test'],
+      });
 
-    expect(mockNostrSignaler.destroy).toHaveBeenCalled();
-    expect(mockLibP2PSignaler.destroy).toHaveBeenCalled();
-  });
-
-  it('listen() ignores non-offer messages', async () => {
-    mockNostrSignaler.subscribe.mockImplementation(
-      async (_pubKey: string, onMessage: (msg: SignalingMessage) => void) => {
-        setTimeout(() => {
-          onMessage({
-            kind: 'sdp',
-            payload: {
-              type: 'answer',
-              sdp: 'v=0\r\nanswer',
-              senderPubKey: mockUri.publicKey,
-              recipientPubKey: mockKeypair.publicKeyHex,
-              nonce: 'x',
-              timestamp: Date.now(),
-            },
-          });
-        }, 10);
-        return () => {};
-      },
-    );
-
-    const { SovereignBroker } = await import('../src/broker.js');
-    const broker = new SovereignBroker({
-      keypair: mockKeypair,
-      nostrRelays: ['wss://relay.test'],
+      await expect(broker.destroy()).resolves.toBeUndefined();
     });
-
-    const onIncoming = vi.fn();
-    await broker.listen(onIncoming);
-
-    await new Promise((r) => setTimeout(r, 100));
-    expect(onIncoming).not.toHaveBeenCalled();
   });
 });
