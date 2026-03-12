@@ -1,0 +1,15 @@
+[package]
+name = "walletcast-libp2p"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+# Future: libp2p, libp2p-webrtc, libp2p-gossipsub, libp2p-noise
+
+[profile.release]
+opt-level = 'z'
+lto = true
