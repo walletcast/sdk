@@ -14,13 +14,14 @@
   },
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
-    "test": "echo 'no tests yet'",
+    "test": "vitest run",
     "clean": "rm -rf dist"
   },
   "files": ["dist"],
   "dependencies": {
     "@walletcast/types": "workspace:*",
-    "@walletcast/broker": "workspace:*"
+    "@walletcast/broker": "workspace:*",
+    "@walletcast/webrtc": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.4.0",

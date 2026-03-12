@@ -126,6 +126,9 @@ importers:
       '@walletcast/types':
         specifier: workspace:*
         version: link:../types
+      '@walletcast/webrtc':
+        specifier: workspace:*
+        version: link:../webrtc
     devDependencies:
       tsup:
         specifier: ^8.4.0
