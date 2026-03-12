@@ -95,9 +95,12 @@ importers:
 
   packages/nostr-signaling:
     dependencies:
-      '@walletcast/crypto':
-        specifier: workspace:*
-        version: link:../crypto
+      '@noble/curves':
+        specifier: ^1.8.0
+        version: 1.9.7
+      '@noble/hashes':
+        specifier: ^1.7.0
+        version: 1.8.0
       '@walletcast/types':
         specifier: workspace:*
         version: link:../types
