@@ -15,7 +15,7 @@ import type { QROptions, SVGOptions } from '@walletcast/qr';
 import { QRModal } from './qr-modal.js';
 import { DEFAULT_NOSTR_RELAYS } from './defaults.js';
 
-const DEFAULT_CONNECTOR_URL = 'https://machinemade.name/walletcast/';
+const DEFAULT_CONNECTOR_URL = 'https://walletcast.net/';
 
 export interface ConnectOptions {
   rpcUrl: string;

@@ -7,23 +7,31 @@ import {
 } from '../src/wallets.js';
 import type { WalletId } from '../src/types.js';
 
-const CONNECTOR_BASE = 'https://machinemade.name/walletcast/';
+const CONNECTOR_BASE = 'https://walletcast.net/';
 const PUBKEY = 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
 const RELAYS = ['wss://relay.damus.io', 'wss://nos.lol'];
 
 describe('generateConnectorUrl', () => {
-  it('puts pubkey and relays in the hash fragment', () => {
+  it('uses clean path segments (no hash, no query string)', () => {
     const url = generateConnectorUrl(CONNECTOR_BASE, PUBKEY, RELAYS);
 
-    expect(url).toContain('#');
-    const hash = url.split('#')[1];
-    const params = new URLSearchParams(hash);
-
-    expect(params.get('pubkey')).toBe(PUBKEY);
-    expect(params.get('relays')).toBe(RELAYS.join(','));
+    expect(url).not.toContain('#');
+    expect(url).not.toContain('?');
+    expect(url).toContain('/c/');
+    // Relay hosts appear as path segments without wss://
+    expect(url).toContain('relay.damus.io');
+    expect(url).toContain('nos.lol');
   });
 
-  it('preserves the base URL exactly', () => {
+  it('encodes pubkey as base64url (43 chars)', () => {
+    const url = generateConnectorUrl(CONNECTOR_BASE, PUBKEY, RELAYS);
+    const parts = url.split('/').filter(Boolean);
+    const pubB64 = parts[parts.indexOf('c') + 1];
+    expect(pubB64).toHaveLength(43);
+    expect(pubB64).toMatch(/^[A-Za-z0-9_-]+$/);
+  });
+
+  it('preserves the base URL as prefix', () => {
     const url = generateConnectorUrl(CONNECTOR_BASE, PUBKEY, RELAYS);
     expect(url.startsWith(CONNECTOR_BASE)).toBe(true);
   });

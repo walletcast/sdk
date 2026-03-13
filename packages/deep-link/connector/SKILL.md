@@ -38,7 +38,7 @@ console.log(`Connected via ${type}:`, accounts);
 {
   rpcUrl: string;            // Required — public RPC for read methods
   chainId: number;           // Required — target chain ID
-  connectorUrl?: string;     // Default: 'https://machinemade.name/walletcast/'
+  connectorUrl?: string;     // Default: 'https://walletcast.net/'
   nostrRelays?: string[];    // Override default Nostr relays
   preferInjected?: boolean;  // Default: true — check for injected wallet first
   theme?: 'dark' | 'light';  // QR modal theme (default: 'dark')
@@ -144,7 +144,7 @@ import { WalletCast, toSVGDataURL, WALLET_REGISTRY } from '@walletcast/sdk';
 import type { WalletId } from '@walletcast/sdk';
 
 const { provider, links, approval } = WalletCast.createDeepLinkProvider({
-  connectorUrl: 'https://machinemade.name/walletcast/',
+  connectorUrl: 'https://walletcast.net/',
   rpcUrl: 'https://eth.llamarpc.com',
   chainId: 1,
 });
@@ -181,6 +181,6 @@ Test flow: start dev server, click connect, QR modal appears (if no injected wal
 
 ## Reference
 
-- [Integration Guide (AGENTS.md)](https://machinemade.name/walletcast/AGENTS.md)
+- [Integration Guide (AGENTS.md)](https://walletcast.net/AGENTS.md)
 - [GitHub](https://github.com/nicholasgasior/walletcast)
 - [npm](https://www.npmjs.com/package/@walletcast/sdk)

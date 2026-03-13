@@ -73,7 +73,7 @@ For custom UI or more control:
 import { WalletCast, WALLET_REGISTRY, toSVGDataURL } from '@walletcast/sdk';
 
 const { provider, links, keypair, relays, approval } = WalletCast.createDeepLinkProvider({
-  connectorUrl: 'https://machinemade.name/walletcast/',
+  connectorUrl: 'https://walletcast.net/',
   rpcUrl: 'https://eth.llamarpc.com',
   chainId: 1,
 });
@@ -145,7 +145,7 @@ Features:
 - **Disconnect button** — sends disconnect message to dapp, clears session
 - **Auto-detection** — EIP-6963 + `window.ethereum` with timeout fallback
 
-- **Live:** [machinemade.name/walletcast/](https://machinemade.name/walletcast/)
+- **Live:** [walletcast.net/](https://walletcast.net/)
 - **Build:** `pnpm --filter @walletcast/deep-link build:connector`
 - **Output:** `packages/deep-link/dist/connector.html`
 

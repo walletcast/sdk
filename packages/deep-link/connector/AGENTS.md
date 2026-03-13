@@ -20,7 +20,7 @@ import { WalletCast } from '@walletcast/sdk';
 const { provider, accounts, type, chainId, disconnect } = await WalletCast.connect({
   rpcUrl: 'https://eth.llamarpc.com',    // Public RPC for read methods
   chainId: 1,                             // Target chain ID
-  connectorUrl: 'https://machinemade.name/walletcast/',  // Optional (default)
+  connectorUrl: 'https://walletcast.net/',  // Optional (default)
   nostrRelays: ['wss://relay.damus.io'],  // Optional — defaults provided
   preferInjected: true,                    // Check injected wallets first (default)
   theme: 'dark',                           // QR modal theme (default)
@@ -50,7 +50,7 @@ For custom UI — generates deep links but doesn't show any modal. You render yo
 import { WalletCast, WALLET_REGISTRY, toSVGDataURL } from '@walletcast/sdk';
 
 const { provider, links, connectorUrl, pubkey, keypair, relays, approval } = WalletCast.createDeepLinkProvider({
-  connectorUrl: 'https://machinemade.name/walletcast/',
+  connectorUrl: 'https://walletcast.net/',
   rpcUrl: 'https://eth.llamarpc.com',
   chainId: 1,
 });
@@ -59,7 +59,7 @@ const { provider, links, connectorUrl, pubkey, keypair, relays, approval } = Wal
 **Returns `DeepLinkResult`:**
 - `provider` — EIP-1193 compatible provider
 - `links` — `Record<WalletId, { universal: string; native: string }>` — deep link URLs for each wallet
-- `connectorUrl` — Full connector URL with pubkey/relay params
+- `connectorUrl` — Full connector URL: `https://walletcast.net/c/{pubkey_b64url}/{relay1}/{relay2}/...`
 - `pubkey` — Dapp's ephemeral public key (hex)
 - `keypair` — Dapp's full keypair (for manual session persistence)
 - `relays` — Nostr relay URLs used
@@ -177,7 +177,7 @@ import { WalletCast, toSVGDataURL, WALLET_REGISTRY } from '@walletcast/sdk';
 import type { WalletId } from '@walletcast/sdk';
 
 const { provider, links, approval } = WalletCast.createDeepLinkProvider({
-  connectorUrl: 'https://machinemade.name/walletcast/',
+  connectorUrl: 'https://walletcast.net/',
   rpcUrl: 'https://eth.llamarpc.com',
   chainId: 1,
 });

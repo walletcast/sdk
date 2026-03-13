@@ -4,6 +4,14 @@ function stripProtocol(url: string): string {
   return url.replace(/^https?:\/\//, '');
 }
 
+function hexToBase64url(hex: string): string {
+  const bytes = new Uint8Array(hex.match(/.{2}/g)!.map((b) => parseInt(b, 16)));
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}
+
 export const WALLET_REGISTRY: Record<WalletId, WalletInfo> = {
   metamask: {
     name: 'MetaMask',
@@ -41,18 +49,18 @@ export const WALLET_REGISTRY: Record<WalletId, WalletInfo> = {
 };
 
 /**
- * Build the full connector URL with connection params in the hash fragment.
- * Hash fragments are never sent to the server — safe for secrets.
+ * Build the full connector URL using clean path segments.
+ * Format: {baseUrl}c/{pubkey_base64url}/{relay1}/{relay2}/...
+ * Example: https://walletcast.net/c/7xKp8y.../relay.damus.io/nos.lol
  */
 export function generateConnectorUrl(
   baseUrl: string,
   pubkey: string,
   relays: string[],
 ): string {
-  const params = new URLSearchParams();
-  params.set('pubkey', pubkey);
-  params.set('relays', relays.join(','));
-  return `${baseUrl}#${params.toString()}`;
+  const pubB64 = hexToBase64url(pubkey);
+  const relayPaths = relays.map((r) => r.replace(/^wss?:\/\//, ''));
+  return `${baseUrl}c/${pubB64}/${relayPaths.join('/')}`;
 }
 
 /**

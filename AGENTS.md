@@ -62,7 +62,7 @@ Auto-detects injected wallet or shows QR modal. Restores saved sessions.
 const { provider, accounts, type, chainId, disconnect } = await WalletCast.connect({
   rpcUrl: string;           // Public RPC for read methods
   chainId: number;          // Target chain ID
-  connectorUrl?: string;    // Default: machinemade.name/walletcast/
+  connectorUrl?: string;    // Default: walletcast.net/
   nostrRelays?: string[];   // Override default relays
   preferInjected?: boolean; // Default: true
   theme?: 'dark' | 'light'; // Modal theme
@@ -162,7 +162,7 @@ Edit `packages/provider/src/rpc-router.ts` -- add the method name to the appropr
 scp packages/deep-link/dist/* clawd:~/.openclaw/workspace/workspace/walletcast/
 ssh clawd 'cd ~/.openclaw/workspace && docker compose exec sandbox bash -c "cp /workspace/walletcast/* /var/www/walletcast/"'
 ```
-Cloudflare may need cache purge after deploy at `https://machinemade.name/walletcast/`.
+Cloudflare may need cache purge after deploy at `https://walletcast.net/`.
 
 ## File Structure
 

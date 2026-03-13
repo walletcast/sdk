@@ -4,7 +4,7 @@
  * Runs inside a wallet's in-app browser. Bridges window.ethereum <-> Nostr
  * relays so a desktop dapp can communicate with the wallet remotely.
  *
- * URL format: https://machinemade.name/walletcast/#pubkey=<hex>&relays=<url1>,<url2>
+ * URL format: https://walletcast.net/c/{pubkey_base64url}/{relay1}/{relay2}/...
  *
  * Features:
  * - Session persistence (localStorage) — survives page reloads
@@ -96,18 +96,29 @@ function clearSession(): void {
 }
 
 // --- Parse URL params ---
-function parseHashParams(): { pubkey: string; relays: string[] } | null {
-  const hash = window.location.hash.slice(1);
-  const params = new URLSearchParams(hash);
-  const pubkey = params.get('pubkey');
-  const relaysStr = params.get('relays');
+function base64urlToHex(b64: string): string | null {
+  try {
+    const padded = b64.replace(/-/g, '+').replace(/_/g, '/');
+    const padLen = (4 - (padded.length % 4)) % 4;
+    const bin = atob(padded + '='.repeat(padLen));
+    return Array.from(bin)
+      .map((c) => c.charCodeAt(0).toString(16).padStart(2, '0'))
+      .join('');
+  } catch {
+    return null;
+  }
+}
 
-  if (!pubkey || !relaysStr) return null;
+function parseConnectionParams(): { pubkey: string; relays: string[] } | null {
+  const parts = window.location.pathname.split('/').filter(Boolean);
+  // Expect: ['c', pubkey_b64url, relay1_host, relay2_host, ...]
+  if (parts[0] !== 'c' || parts.length < 3) return null;
 
-  return {
-    pubkey,
-    relays: relaysStr.split(',').filter((r: string) => r.startsWith('wss://')),
-  };
+  const pubkey = base64urlToHex(parts[1]);
+  if (!pubkey || pubkey.length !== 64) return null;
+
+  const relays = parts.slice(2).map((h) => `wss://${h}`);
+  return { pubkey, relays };
 }
 
 // --- Detect wallet provider ---
@@ -148,7 +159,7 @@ async function main() {
   setStatus('Initializing...', 'info');
 
   // 1. Parse connection params
-  const params = parseHashParams();
+  const params = parseConnectionParams();
   if (!params) {
     const landing = document.getElementById('landing');
     if (landing) landing.classList.add('active');
