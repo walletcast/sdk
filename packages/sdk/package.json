@@ -1,6 +1,6 @@
 {
   "name": "@walletcast/sdk",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
@@ -23,7 +23,9 @@
     "test": "vitest run",
     "clean": "rm -rf dist"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   },
