@@ -19,6 +19,9 @@
     #log .ok  { color: #4ade80; }
     #log .err { color: #f87171; }
     .type-badge { background: #1a1a1a; border: 1px solid #333; border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 0.75rem; color: #818cf8; }
+    #actions { margin-top: 1.5rem; display: none; }
+    .action-btn { background: #1e293b; border: 1px solid #334155; color: #94a3b8; font-size: 0.85rem; padding: 0.5rem 1rem; }
+    .action-btn:hover { background: #334155; color: #e2e8f0; }
   </style>
 </head>
 <body>
@@ -33,6 +36,13 @@
 
   <div id="account">
     Account: <span id="addr"></span> &nbsp;|&nbsp; Chain: <span id="chain"></span> &nbsp;|&nbsp; <span class="type-badge" id="connType"></span>
+  </div>
+
+  <div id="actions">
+    <div class="btn-row">
+      <button id="sendBtn" class="action-btn">Send 0 ETH to self</button>
+      <button id="signBtn" class="action-btn">Sign random message</button>
+    </div>
   </div>
 
   <div id="log"></div>
@@ -51,6 +61,8 @@
 
     const $ = (id) => document.getElementById(id);
     let disconnectFn = null;
+    let provider = null;
+    let currentAccount = null;
 
     const log = (msg, cls = '') => {
       const div = document.createElement('div');
@@ -70,18 +82,22 @@
         });
 
         disconnectFn = result.disconnect;
-        const addr = result.accounts[0];
+        provider = result.provider;
+        currentAccount = result.accounts[0];
+        const addr = currentAccount;
 
         log(`Connected via ${result.type}! ${addr}`, 'ok');
         $('addr').textContent = `${addr.slice(0, 6)}...${addr.slice(-4)}`;
         $('chain').textContent = parseInt(result.chainId, 16);
         $('connType').textContent = result.type;
         $('account').style.display = 'block';
+        $('actions').style.display = 'block';
         $('connect').style.display = 'none';
         $('disconnect').style.display = 'inline-block';
 
         result.provider.on('accountsChanged', ([a]) => {
           if (a) {
+            currentAccount = a;
             $('addr').textContent = `${a.slice(0, 6)}...${a.slice(-4)}`;
             log(`Account: ${a}`, 'ok');
           }
@@ -89,7 +105,10 @@
 
         result.provider.on('disconnect', () => {
           log('Disconnected', 'err');
+          provider = null;
+          currentAccount = null;
           $('account').style.display = 'none';
+          $('actions').style.display = 'none';
           $('connect').style.display = 'inline-block';
           $('connect').disabled = false;
           $('connect').textContent = 'Connect Wallet';
@@ -107,12 +126,48 @@
         await disconnectFn();
         disconnectFn = null;
       }
+      provider = null;
+      currentAccount = null;
       $('account').style.display = 'none';
+      $('actions').style.display = 'none';
       $('connect').style.display = 'inline-block';
       $('connect').disabled = false;
       $('connect').textContent = 'Connect Wallet';
       $('disconnect').style.display = 'none';
       log('Disconnected');
+    });
+
+    $('sendBtn').addEventListener('click', async () => {
+      if (!provider || !currentAccount) return;
+      $('sendBtn').disabled = true;
+      try {
+        const txHash = await provider.request({
+          method: 'eth_sendTransaction',
+          params: [{ from: currentAccount, to: currentAccount, value: '0x0', gas: '0x5208' }],
+        });
+        log(`Tx sent: ${txHash}`, 'ok');
+      } catch (err) {
+        log(`Tx error: ${err.message}`, 'err');
+      } finally {
+        $('sendBtn').disabled = false;
+      }
+    });
+
+    $('signBtn').addEventListener('click', async () => {
+      if (!provider || !currentAccount) return;
+      $('signBtn').disabled = true;
+      try {
+        const msg = `WalletCast test message — ${new Date().toISOString()}`;
+        const sig = await provider.request({
+          method: 'personal_sign',
+          params: [msg, currentAccount],
+        });
+        log(`Signed: ${sig.slice(0, 20)}...`, 'ok');
+      } catch (err) {
+        log(`Sign error: ${err.message}`, 'err');
+      } finally {
+        $('signBtn').disabled = false;
+      }
     });
 
     log('WalletCast vanilla example loaded');

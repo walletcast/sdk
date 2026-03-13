@@ -76,6 +76,17 @@
       margin-top: 0.75rem;
     }
     .disconnect-btn:hover { background: #991b1b; }
+    .action-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: #888;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.6rem 1rem;
+      width: auto;
+    }
+    .action-btn:hover { background: var(--border); color: var(--text); }
+    .btn-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
     .status {
       display: flex;
       align-items: center;
@@ -150,6 +161,14 @@
       <div class="info-row">
         <span class="info-label">Connection</span>
         <span class="info-value"><span class="type-badge" id="connType">-</span></span>
+      </div>
+    </div>
+
+    <div class="card" id="actionsCard" style="display:none">
+      <h2>Actions</h2>
+      <div class="btn-row">
+        <button id="sendBtn" class="action-btn">Send 0 ETH to self</button>
+        <button id="signBtn" class="action-btn">Sign random message</button>
       </div>
     </div>
 
