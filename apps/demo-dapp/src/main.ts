@@ -1,4 +1,4 @@
-import { WalletCast, type ConnectResult } from '@walletcast/sdk';
+import { WalletCast, type ConnectResult, type DisconnectOptions } from '@walletcast/sdk';
 
 const log = (msg: string, type: 'info' | 'error' | 'success' = 'info') => {
   const el = document.getElementById('log')!;
@@ -16,19 +16,39 @@ const updateStatus = (connected: boolean, text: string) => {
   statusText.textContent = text;
 };
 
+const fmt = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+
 const connectBtn = document.getElementById('connectBtn') as HTMLButtonElement;
 const disconnectBtn = document.getElementById('disconnectBtn') as HTMLButtonElement;
 const accountCard = document.getElementById('accountCard')!;
 const actionsCard = document.getElementById('actionsCard')!;
 const sendBtn = document.getElementById('sendBtn') as HTMLButtonElement;
 const signBtn = document.getElementById('signBtn') as HTMLButtonElement;
-const accountAddr = document.getElementById('accountAddr')!;
+const addAccountBtn = document.getElementById('addAccountBtn') as HTMLButtonElement;
+const accountSelect = document.getElementById('accountSelect') as HTMLSelectElement;
 const chainIdEl = document.getElementById('chainId')!;
 const connTypeEl = document.getElementById('connType')!;
 
-let disconnectFn: (() => Promise<void>) | null = null;
+let disconnectFn: ((opts?: DisconnectOptions) => Promise<void>) | null = null;
 let activeProvider: ConnectResult['provider'] | null = null;
 let currentAccount: string | null = null;
+
+function populateAccountSelect(accounts: string[], selected?: string) {
+  accountSelect.innerHTML = '';
+  for (const addr of accounts) {
+    const opt = document.createElement('option');
+    opt.value = addr;
+    opt.textContent = fmt(addr);
+    if (addr === selected) opt.selected = true;
+    accountSelect.appendChild(opt);
+  }
+  currentAccount = accountSelect.value;
+}
+
+accountSelect.addEventListener('change', () => {
+  currentAccount = accountSelect.value;
+  log(`Active account: ${fmt(currentAccount)}`, 'success');
+});
 
 connectBtn.addEventListener('click', async () => {
   connectBtn.disabled = true;
@@ -36,23 +56,20 @@ connectBtn.addEventListener('click', async () => {
   log('Starting connection...');
 
   try {
-    const result = await WalletCast.connect({
-      rpcUrl: 'https://eth.llamarpc.com',
-      chainId: 1,
-    });
+    const result = await WalletCast.connect();
 
     disconnectFn = result.disconnect;
     activeProvider = result.provider;
-    currentAccount = result.accounts[0];
+
+    populateAccountSelect(result.accounts, result.accounts[0]);
 
     log(`Connected via ${result.type}!`, 'success');
-    log(`Accounts: ${result.accounts.join(', ')}`, 'success');
+    log(`Accounts: ${result.accounts.map(fmt).join(', ')}`, 'success');
     log(`Chain: ${result.chainId}`, 'success');
 
     updateStatus(true, 'Connected');
     accountCard.style.display = 'block';
     actionsCard.style.display = 'block';
-    accountAddr.textContent = `${currentAccount.slice(0, 6)}...${currentAccount.slice(-4)}`;
     chainIdEl.textContent = result.chainId;
     connTypeEl.textContent = result.type;
     connectBtn.style.display = 'none';
@@ -62,9 +79,8 @@ connectBtn.addEventListener('click', async () => {
     result.provider.on('accountsChanged', (accounts: unknown) => {
       const accs = accounts as string[];
       if (accs.length > 0) {
-        currentAccount = accs[0];
-        accountAddr.textContent = `${accs[0].slice(0, 6)}...${accs[0].slice(-4)}`;
-        log(`Account changed: ${accs[0]}`, 'success');
+        populateAccountSelect(accs, accs[0]);
+        log(`Accounts changed: ${accs.map(fmt).join(', ')}`, 'success');
       }
     });
 
@@ -94,7 +110,7 @@ connectBtn.addEventListener('click', async () => {
 
 disconnectBtn.addEventListener('click', async () => {
   if (disconnectFn) {
-    await disconnectFn();
+    await disconnectFn({ revoke: true });
     disconnectFn = null;
   }
   activeProvider = null;
@@ -106,7 +122,30 @@ disconnectBtn.addEventListener('click', async () => {
   connectBtn.disabled = false;
   connectBtn.textContent = 'Connect Wallet';
   disconnectBtn.style.display = 'none';
-  log('Disconnected');
+  log('Disconnected (permissions revoked)');
+});
+
+addAccountBtn.addEventListener('click', async () => {
+  if (!activeProvider) return;
+  addAccountBtn.disabled = true;
+  log('Requesting wallet permissions...');
+  try {
+    // EIP-2255: request permissions — wallet shows account picker
+    await activeProvider.request({
+      method: 'wallet_requestPermissions',
+      params: [{ eth_accounts: {} }],
+    });
+    // After permissions granted, fetch updated account list
+    const accounts = (await activeProvider.request({ method: 'eth_accounts' })) as string[];
+    if (accounts.length > 0) {
+      populateAccountSelect(accounts, accounts[0]);
+      log(`Accounts: ${accounts.map(fmt).join(', ')}`, 'success');
+    }
+  } catch (err) {
+    log(`Permission error: ${(err as Error).message}`, 'error');
+  } finally {
+    addAccountBtn.disabled = false;
+  }
 });
 
 sendBtn.addEventListener('click', async () => {
@@ -129,7 +168,7 @@ signBtn.addEventListener('click', async () => {
   if (!activeProvider || !currentAccount) return;
   signBtn.disabled = true;
   try {
-    const msg = `WalletCast test message — ${new Date().toISOString()}`;
+    const msg = `WalletCast test message \u2014 ${new Date().toISOString()}`;
     const sig = await activeProvider.request({
       method: 'personal_sign',
       params: [msg, currentAccount],

@@ -2,6 +2,7 @@ export {
   WalletCast,
   type ConnectOptions,
   type ConnectResult,
+  type DisconnectOptions,
 } from './walletcast.js';
 
 export { QRModal, type QRModalOptions } from './qr-modal.js';

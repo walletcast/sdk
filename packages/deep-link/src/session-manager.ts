@@ -65,7 +65,6 @@ export class SessionManager {
         !session.relays?.length ||
         !session.accounts?.length ||
         !session.chainId ||
-        !session.rpcUrl ||
         !session.connectorUrl
       ) {
         return null;

@@ -18,13 +18,11 @@ npm install @walletcast/sdk
 ```typescript
 import { WalletCast } from '@walletcast/sdk';
 
-const { provider, accounts, type, disconnect } = await WalletCast.connect({
-  rpcUrl: '<YOUR_RPC_URL>',  // e.g. https://eth.llamarpc.com
-  chainId: 1,                // 1=mainnet, 11155111=sepolia
-});
+const { provider, accounts, type, chainId, disconnect } = await WalletCast.connect();
 
+// Chain and accounts are detected from the wallet automatically
 // type is 'injected' (used window.ethereum) or 'walletcast' (QR deep link)
-console.log(`Connected via ${type}:`, accounts);
+console.log(`Connected via ${type} on chain ${chainId}:`, accounts);
 ```
 
 `WalletCast.connect()` automatically:
@@ -36,8 +34,8 @@ console.log(`Connected via ${type}:`, accounts);
 
 ```typescript
 {
-  rpcUrl: string;            // Required — public RPC for read methods
-  chainId: number;           // Required — target chain ID
+  rpcUrl?: string;           // Optional — public RPC for read methods (if omitted, all requests go through wallet)
+  chainId?: number;          // Optional — detected from wallet if omitted
   connectorUrl?: string;     // Default: 'https://walletcast.net/'
   nostrRelays?: string[];    // Override default Nostr relays
   preferInjected?: boolean;  // Default: true — check for injected wallet first
@@ -109,15 +107,15 @@ import { useState, useCallback } from 'react';
 import { WalletCast } from '@walletcast/sdk';
 import type { ConnectResult } from '@walletcast/sdk';
 
-function useWalletCast(chainId: number, rpcUrl: string) {
+function useWalletCast() {
   const [result, setResult] = useState<ConnectResult | null>(null);
 
   const connect = useCallback(async () => {
-    const res = await WalletCast.connect({ rpcUrl, chainId });
+    const res = await WalletCast.connect();
     setResult(res);
     res.provider.on('disconnect', () => setResult(null));
     return res;
-  }, [rpcUrl, chainId]);
+  }, []);
 
   const disconnect = useCallback(async () => {
     await result?.disconnect();
@@ -145,8 +143,6 @@ import type { WalletId } from '@walletcast/sdk';
 
 const { provider, links, approval } = WalletCast.createDeepLinkProvider({
   connectorUrl: 'https://walletcast.net/',
-  rpcUrl: 'https://eth.llamarpc.com',
-  chainId: 1,
 });
 
 const walletId: WalletId = 'metamask';
@@ -168,16 +164,12 @@ const accounts = await approval;
 
 ## Testing
 
-Use Sepolia testnet for development:
-
 ```typescript
-const { provider } = await WalletCast.connect({
-  rpcUrl: 'https://ethereum-sepolia-rpc.publicnode.com',
-  chainId: 11155111,
-});
+const { provider, chainId } = await WalletCast.connect();
+// chainId is auto-detected from whatever network the wallet is on
 ```
 
-Test flow: start dev server, click connect, QR modal appears (if no injected wallet), scan with MetaMask mobile (set to Sepolia), connector bridges calls, dapp receives accounts.
+Test flow: start dev server, click connect, QR modal appears (if no injected wallet), scan with MetaMask mobile, connector bridges calls, dapp receives accounts and chain. Switch networks in the wallet to test chain detection.
 
 ## Reference
 

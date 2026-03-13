@@ -49,9 +49,12 @@ export const WALLET_REGISTRY: Record<WalletId, WalletInfo> = {
 };
 
 /**
- * Build the full connector URL using clean path segments.
- * Format: {baseUrl}c/{pubkey_base64url}/{relay1}/{relay2}/...
- * Example: https://walletcast.net/c/7xKp8y.../relay.damus.io/nos.lol
+ * Build the full connector URL with connection params in the hash fragment.
+ * Format: {baseUrl}#/c/{pubkey_base64url}/{relay1}/{relay2}/...
+ * Example: https://walletcast.net/#/c/7xKp8y.../relay.damus.io/nos.lol
+ *
+ * The hash fragment is never sent to the server, so pubkeys and relay
+ * addresses stay private (no Cloudflare/nginx log leakage).
  */
 export function generateConnectorUrl(
   baseUrl: string,
@@ -60,7 +63,7 @@ export function generateConnectorUrl(
 ): string {
   const pubB64 = hexToBase64url(pubkey);
   const relayPaths = relays.map((r) => r.replace(/^wss?:\/\//, ''));
-  return `${baseUrl}c/${pubB64}/${relayPaths.join('/')}`;
+  return `${baseUrl}#/c/${pubB64}/${relayPaths.join('/')}`;
 }
 
 /**

@@ -41,15 +41,13 @@ npm install @walletcast/sdk
 import { WalletCast } from '@walletcast/sdk';
 
 // Auto-detects injected wallet or shows QR modal
-const { provider, accounts, type, disconnect } = await WalletCast.connect({
-  rpcUrl: 'https://eth.llamarpc.com',
-  chainId: 1,
-});
+// Chain and accounts are detected from the wallet — no config needed
+const { provider, accounts, chainId, type, disconnect } = await WalletCast.connect();
 
-console.log(`Connected via ${type}:`, accounts);
+console.log(`Connected via ${type} on chain ${chainId}:`, accounts);
 
 // Use as standard EIP-1193 provider
-const chainId = await provider.request({ method: 'eth_chainId' });
+const balance = await provider.request({ method: 'eth_getBalance', params: [accounts[0], 'latest'] });
 
 // Or wrap with ethers.js
 import { BrowserProvider } from 'ethers';
@@ -60,10 +58,12 @@ await disconnect();
 ```
 
 `WalletCast.connect()` handles everything:
+- **Zero config** — detects chain and accounts from the wallet automatically
 - **Tries session restore first** — if a previous session exists, silently reconnects via ping/pong
 - **Checks for injected wallets** — `window.ethereum` + EIP-6963
 - **Falls back to QR modal** — Shadow DOM modal with wallet picker + QR codes
 - Returns `type: 'injected' | 'walletcast'` so you know which path was taken
+- Optionally pass `rpcUrl` for faster read methods (routed to public RPC instead of wallet)
 
 ### Lower-level API
 
@@ -74,8 +74,6 @@ import { WalletCast, WALLET_REGISTRY, toSVGDataURL } from '@walletcast/sdk';
 
 const { provider, links, keypair, relays, approval } = WalletCast.createDeepLinkProvider({
   connectorUrl: 'https://walletcast.net/',
-  rpcUrl: 'https://eth.llamarpc.com',
-  chainId: 1,
 });
 
 // Show your own QR code for MetaMask

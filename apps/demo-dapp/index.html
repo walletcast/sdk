@@ -131,6 +131,35 @@
       color: var(--accent);
       font-family: monospace;
     }
+    .account-select {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.4rem 0.6rem;
+      font-family: monospace;
+      font-size: 0.8rem;
+      width: 100%;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M3 5l3 3 3-3'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.5rem center;
+    }
+    .account-select:hover { border-color: var(--accent); }
+    .account-select option { background: var(--surface); color: var(--text); }
+    .add-account-btn {
+      background: none;
+      border: 1px dashed var(--border);
+      color: #666;
+      font-size: 0.75rem;
+      padding: 0.3rem 0.6rem;
+      width: auto;
+      margin-top: 0.5rem;
+      font-weight: 400;
+    }
+    .add-account-btn:hover { border-color: var(--accent); color: var(--accent); background: none; }
   </style>
 </head>
 <body>
@@ -152,7 +181,9 @@
       <h2>Wallet Info</h2>
       <div class="info-row">
         <span class="info-label">Account</span>
-        <span class="info-value" id="accountAddr">-</span>
+        <span class="info-value">
+          <select id="accountSelect" class="account-select"></select>
+        </span>
       </div>
       <div class="info-row">
         <span class="info-label">Chain ID</span>
@@ -162,6 +193,7 @@
         <span class="info-label">Connection</span>
         <span class="info-value"><span class="type-badge" id="connType">-</span></span>
       </div>
+      <button id="addAccountBtn" class="add-account-btn">+ Request more accounts</button>
     </div>
 
     <div class="card" id="actionsCard" style="display:none">

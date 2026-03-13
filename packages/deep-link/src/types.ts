@@ -13,10 +13,10 @@ export interface WalletInfo {
 export interface DeepLinkConfig {
   /** URL where the connector page is hosted */
   connectorUrl: string;
-  /** Public RPC endpoint for read methods */
-  rpcUrl: string;
-  /** Target chain ID */
-  chainId: number;
+  /** Public RPC endpoint for read methods. If omitted, all requests go through the wallet. */
+  rpcUrl?: string;
+  /** Target chain ID. If omitted, detected from the wallet on connect. */
+  chainId?: number;
   /** Nostr relay WebSocket URLs (defaults to well-known public relays) */
   nostrRelays?: string[];
   /** Fallback URL to fetch a fresh relay list if hardcoded relays are down */

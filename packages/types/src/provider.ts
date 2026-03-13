@@ -32,6 +32,9 @@ export type SigningMethod =
   | 'eth_signTypedData_v4'
   | 'wallet_addEthereumChain'
   | 'wallet_switchEthereumChain'
+  | 'wallet_requestPermissions'
+  | 'wallet_revokePermissions'
+  | 'wallet_getPermissions'
   | 'eth_requestAccounts';
 
 export const READ_METHODS: ReadMethod[] = [
@@ -60,6 +63,9 @@ export const SIGNING_METHODS: SigningMethod[] = [
   'eth_signTypedData_v4',
   'wallet_addEthereumChain',
   'wallet_switchEthereumChain',
+  'wallet_requestPermissions',
+  'wallet_revokePermissions',
+  'wallet_getPermissions',
   'eth_requestAccounts',
 ];
 

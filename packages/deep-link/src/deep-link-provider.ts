@@ -25,7 +25,7 @@ export interface RestoredSessionState {
  */
 export class DeepLinkProvider implements EIP1193Provider {
   private nostrRpc: NostrRpc;
-  private rpcRouter: RpcRouter;
+  private rpcRouter: RpcRouter | null;
   private emitter = new ProviderEventEmitter();
   private remotePubKey: string | null = null;
   private accounts: string[] = [];
@@ -44,13 +44,13 @@ export class DeepLinkProvider implements EIP1193Provider {
   onSessionCleared: (() => void) | null = null;
 
   constructor(
-    rpcUrl: string,
-    chainId: number,
+    rpcUrl: string | undefined,
+    chainId: number | undefined,
     nostrRpc: NostrRpc,
     restoredState?: RestoredSessionState,
   ) {
-    this.chainId = `0x${chainId.toString(16)}`;
-    this.rpcRouter = new RpcRouter(rpcUrl);
+    this.chainId = chainId != null ? `0x${chainId.toString(16)}` : '0x0';
+    this.rpcRouter = rpcUrl ? new RpcRouter(rpcUrl) : null;
     this.nostrRpc = nostrRpc;
 
     if (restoredState) {
@@ -148,6 +148,11 @@ export class DeepLinkProvider implements EIP1193Provider {
         );
     }
 
+    // No public RPC — forward everything to the wallet (fully transparent)
+    if (!this.rpcRouter) {
+      return this.sendToWallet(method, params);
+    }
+
     if (isReadMethod(method)) {
       return this.rpcRouter.sendToPublicRPC(method, params);
     }
@@ -170,6 +175,11 @@ export class DeepLinkProvider implements EIP1193Provider {
 
   get isConnected(): boolean {
     return this.connected;
+  }
+
+  /** The wallet's current chain ID (hex string, e.g. "0x1"). Updated from session/events. */
+  get currentChainId(): string {
+    return this.chainId;
   }
 
   async disconnect(): Promise<void> {

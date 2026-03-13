@@ -18,12 +18,12 @@ High-level API that handles everything: session restore, injected wallet detecti
 import { WalletCast } from '@walletcast/sdk';
 
 const { provider, accounts, type, chainId, disconnect } = await WalletCast.connect({
-  rpcUrl: 'https://eth.llamarpc.com',    // Public RPC for read methods
-  chainId: 1,                             // Target chain ID
-  connectorUrl: 'https://walletcast.net/',  // Optional (default)
-  nostrRelays: ['wss://relay.damus.io'],  // Optional — defaults provided
-  preferInjected: true,                    // Check injected wallets first (default)
-  theme: 'dark',                           // QR modal theme (default)
+  // All options are optional — chain is detected from the wallet
+  rpcUrl: 'https://eth.llamarpc.com',      // Optional — public RPC for read methods (if omitted, all requests go through wallet)
+  connectorUrl: 'https://walletcast.net/', // Optional (default)
+  nostrRelays: ['wss://relay.damus.io'],   // Optional — defaults provided
+  preferInjected: true,                     // Check injected wallets first (default)
+  theme: 'dark',                            // QR modal theme (default)
 });
 
 // type is 'injected' | 'walletcast'
@@ -51,15 +51,13 @@ import { WalletCast, WALLET_REGISTRY, toSVGDataURL } from '@walletcast/sdk';
 
 const { provider, links, connectorUrl, pubkey, keypair, relays, approval } = WalletCast.createDeepLinkProvider({
   connectorUrl: 'https://walletcast.net/',
-  rpcUrl: 'https://eth.llamarpc.com',
-  chainId: 1,
 });
 ```
 
 **Returns `DeepLinkResult`:**
 - `provider` — EIP-1193 compatible provider
 - `links` — `Record<WalletId, { universal: string; native: string }>` — deep link URLs for each wallet
-- `connectorUrl` — Full connector URL: `https://walletcast.net/c/{pubkey_b64url}/{relay1}/{relay2}/...`
+- `connectorUrl` — Full connector URL: `https://walletcast.net/#/c/{pubkey_b64url}/{relay1}/{relay2}/...`
 - `pubkey` — Dapp's ephemeral public key (hex)
 - `keypair` — Dapp's full keypair (for manual session persistence)
 - `relays` — Nostr relay URLs used
@@ -95,12 +93,9 @@ import {
 ```typescript
 import { WalletCast } from '@walletcast/sdk';
 
-const { provider, disconnect } = await WalletCast.connect({
-  rpcUrl: 'https://eth.llamarpc.com',
-  chainId: 1,
-});
+const { provider, disconnect } = await WalletCast.connect();
 
-// Done! provider is ready to use.
+// Done! provider is ready to use — chain detected from wallet.
 ```
 
 ### With ethers.js v6
@@ -109,10 +104,7 @@ const { provider, disconnect } = await WalletCast.connect({
 import { BrowserProvider } from 'ethers';
 import { WalletCast } from '@walletcast/sdk';
 
-const { provider } = await WalletCast.connect({
-  rpcUrl: 'https://eth.llamarpc.com',
-  chainId: 1,
-});
+const { provider } = await WalletCast.connect();
 
 const signer = await new BrowserProvider(provider).getSigner();
 const tx = await signer.sendTransaction({ to: '0x...', value: parseEther('0.01') });
@@ -122,16 +114,11 @@ const tx = await signer.sendTransaction({ to: '0x...', value: parseEther('0.01')
 
 ```typescript
 import { createWalletClient, custom } from 'viem';
-import { mainnet } from 'viem/chains';
 import { WalletCast } from '@walletcast/sdk';
 
-const { provider } = await WalletCast.connect({
-  rpcUrl: 'https://eth.llamarpc.com',
-  chainId: 1,
-});
+const { provider } = await WalletCast.connect();
 
 const client = createWalletClient({
-  chain: mainnet,
   transport: custom(provider),
 });
 ```
@@ -143,16 +130,16 @@ import { useState, useCallback } from 'react';
 import { WalletCast } from '@walletcast/sdk';
 import type { EIP1193Provider, ConnectResult } from '@walletcast/sdk';
 
-function useWalletCast(chainId: number, rpcUrl: string) {
+function useWalletCast() {
   const [result, setResult] = useState<ConnectResult | null>(null);
 
   const connect = useCallback(async () => {
-    const res = await WalletCast.connect({ rpcUrl, chainId });
+    const res = await WalletCast.connect();
     setResult(res);
 
     res.provider.on('disconnect', () => setResult(null));
     return res;
-  }, [rpcUrl, chainId]);
+  }, []);
 
   const disconnect = useCallback(async () => {
     await result?.disconnect();
@@ -178,8 +165,6 @@ import type { WalletId } from '@walletcast/sdk';
 
 const { provider, links, approval } = WalletCast.createDeepLinkProvider({
   connectorUrl: 'https://walletcast.net/',
-  rpcUrl: 'https://eth.llamarpc.com',
-  chainId: 1,
 });
 
 // Render your own QR

@@ -54,14 +54,15 @@ P2P exports (broker, webrtc, signalers) are available via `@walletcast/sdk/p2p` 
 
 ## SDK Public API
 
-### `WalletCast.connect(options)` — Primary entry point
+### `WalletCast.connect(options?)` — Primary entry point
 
 Auto-detects injected wallet or shows QR modal. Restores saved sessions.
+All options are optional — chain and accounts are detected from the wallet.
 
 ```typescript
 const { provider, accounts, type, chainId, disconnect } = await WalletCast.connect({
-  rpcUrl: string;           // Public RPC for read methods
-  chainId: number;          // Target chain ID
+  rpcUrl?: string;          // Optional — public RPC for read methods (if omitted, all requests go through wallet)
+  chainId?: number;         // Optional — detected from wallet if omitted
   connectorUrl?: string;    // Default: walletcast.net/
   nostrRelays?: string[];   // Override default relays
   preferInjected?: boolean; // Default: true
@@ -101,9 +102,11 @@ interface EIP1193Provider {
 ```
 
 ### RPC Routing
-Providers split RPC calls into two paths:
+When `rpcUrl` is provided, providers split RPC calls into two paths:
 - **Read methods** (eth_call, eth_getBalance, eth_blockNumber, etc.) -> sent to public RPC URL
 - **Signing methods** (eth_sendTransaction, personal_sign, eth_signTypedData_v4, etc.) -> forwarded to wallet
+
+When `rpcUrl` is omitted, all requests are forwarded to the wallet (fully transparent mode).
 
 ### Session Persistence
 

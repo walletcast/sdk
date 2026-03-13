@@ -4,7 +4,7 @@
  * Runs inside a wallet's in-app browser. Bridges window.ethereum <-> Nostr
  * relays so a desktop dapp can communicate with the wallet remotely.
  *
- * URL format: https://walletcast.net/c/{pubkey_base64url}/{relay1}/{relay2}/...
+ * URL format: https://walletcast.net/#/c/{pubkey_base64url}/{relay1}/{relay2}/...
  *
  * Features:
  * - Session persistence (localStorage) — survives page reloads
@@ -110,7 +110,9 @@ function base64urlToHex(b64: string): string | null {
 }
 
 function parseConnectionParams(): { pubkey: string; relays: string[] } | null {
-  const parts = window.location.pathname.split('/').filter(Boolean);
+  // Read from hash fragment — never sent to the server (privacy)
+  const hash = window.location.hash.replace(/^#\/?/, '');
+  const parts = hash.split('/').filter(Boolean);
   // Expect: ['c', pubkey_b64url, relay1_host, relay2_host, ...]
   if (parts[0] !== 'c' || parts.length < 3) return null;
 

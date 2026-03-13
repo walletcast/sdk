@@ -165,7 +165,6 @@ describe('WalletCast', () => {
       expect(DEFAULT_NOSTR_RELAYS).toEqual([
         'wss://relay.damus.io',
         'wss://nos.lol',
-        'wss://relay.nostr.band',
       ]);
     });
   });

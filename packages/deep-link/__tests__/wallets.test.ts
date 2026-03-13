@@ -12,12 +12,11 @@ const PUBKEY = 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
 const RELAYS = ['wss://relay.damus.io', 'wss://nos.lol'];
 
 describe('generateConnectorUrl', () => {
-  it('uses clean path segments (no hash, no query string)', () => {
+  it('puts connection params in the hash fragment (no query string)', () => {
     const url = generateConnectorUrl(CONNECTOR_BASE, PUBKEY, RELAYS);
 
-    expect(url).not.toContain('#');
+    expect(url).toContain('#/c/');
     expect(url).not.toContain('?');
-    expect(url).toContain('/c/');
     // Relay hosts appear as path segments without wss://
     expect(url).toContain('relay.damus.io');
     expect(url).toContain('nos.lol');
@@ -25,15 +24,16 @@ describe('generateConnectorUrl', () => {
 
   it('encodes pubkey as base64url (43 chars)', () => {
     const url = generateConnectorUrl(CONNECTOR_BASE, PUBKEY, RELAYS);
-    const parts = url.split('/').filter(Boolean);
+    const hash = url.split('#')[1];
+    const parts = hash.split('/').filter(Boolean);
     const pubB64 = parts[parts.indexOf('c') + 1];
     expect(pubB64).toHaveLength(43);
     expect(pubB64).toMatch(/^[A-Za-z0-9_-]+$/);
   });
 
-  it('preserves the base URL as prefix', () => {
+  it('preserves the base URL before the hash', () => {
     const url = generateConnectorUrl(CONNECTOR_BASE, PUBKEY, RELAYS);
-    expect(url.startsWith(CONNECTOR_BASE)).toBe(true);
+    expect(url.startsWith(CONNECTOR_BASE + '#')).toBe(true);
   });
 });
 

@@ -18,8 +18,10 @@ import { DEFAULT_NOSTR_RELAYS } from './defaults.js';
 const DEFAULT_CONNECTOR_URL = 'https://walletcast.net/';
 
 export interface ConnectOptions {
-  rpcUrl: string;
-  chainId: number;
+  /** Public RPC endpoint for read methods. If omitted, all requests go through the wallet. */
+  rpcUrl?: string;
+  /** Target chain ID. If omitted, detected from the wallet on connect. */
+  chainId?: number;
   connectorUrl?: string;
   nostrRelays?: string[];
   /** Check for injected wallet first (default: true) */
@@ -32,12 +34,17 @@ export interface ConnectOptions {
   walletId?: WalletId;
 }
 
+export interface DisconnectOptions {
+  /** Revoke wallet permissions so the next connect() shows the account picker (default: false). */
+  revoke?: boolean;
+}
+
 export interface ConnectResult {
   provider: EIP1193Provider;
   type: 'injected' | 'walletcast';
   accounts: string[];
   chainId: string;
-  disconnect: () => Promise<void>;
+  disconnect: (options?: DisconnectOptions) => Promise<void>;
 }
 
 function keypairFromPrivateKeyHex(hex: string): KeyPair {
@@ -62,7 +69,7 @@ export class WalletCast {
    * 2. If `preferInjected`, check for window.ethereum / EIP-6963
    * 3. Otherwise, show QR modal for mobile wallet connection
    */
-  static async connect(options: ConnectOptions): Promise<ConnectResult> {
+  static async connect(options: ConnectOptions = {}): Promise<ConnectResult> {
     const sessionManager = new SessionManager(
       'walletcast_session_v1',
       options.sessionTTL ?? 24 * 60 * 60 * 1000,
@@ -76,7 +83,7 @@ export class WalletCast {
         const relays = saved.relays;
         const nostrRpc = new NostrRpc(relays, keypair);
 
-        const provider = new DeepLinkProvider(saved.rpcUrl, parseInt(saved.chainId, 16), nostrRpc, {
+        const provider = new DeepLinkProvider(saved.rpcUrl || undefined, saved.chainId ? parseInt(saved.chainId, 16) : undefined, nostrRpc, {
           remotePubKey: saved.remotePubKey,
           accounts: saved.accounts,
           chainId: saved.chainId,
@@ -91,7 +98,7 @@ export class WalletCast {
           type: 'walletcast',
           accounts,
           chainId: saved.chainId,
-          disconnect: async () => {
+          disconnect: async (_opts?: DisconnectOptions) => {
             sessionManager.clear();
             await provider.disconnect();
           },
@@ -115,8 +122,18 @@ export class WalletCast {
             type: 'injected',
             accounts,
             chainId,
-            disconnect: async () => {
-              // Injected wallets handle their own disconnect
+            disconnect: async (opts?: DisconnectOptions) => {
+              if (opts?.revoke) {
+                try {
+                  // EIP-2255: revoke permissions so next connect() shows the account picker
+                  await injected.request({
+                    method: 'wallet_revokePermissions',
+                    params: [{ eth_accounts: {} }],
+                  });
+                } catch {
+                  // Not all wallets support wallet_revokePermissions — best effort
+                }
+              }
             },
           };
         } catch {
@@ -226,7 +243,8 @@ export class WalletCast {
       dlProvider.onSessionCleared = () => sessionManager.clear();
 
       result.approval.then((accounts) => {
-        const chainId = `0x${options.chainId.toString(16)}`;
+        // Use wallet-reported chainId (from session message), not hardcoded options
+        const chainId = dlProvider.currentChainId;
 
         // Save session
         sessionManager.save({
@@ -237,7 +255,7 @@ export class WalletCast {
           relays: result.relays,
           accounts,
           chainId,
-          rpcUrl: options.rpcUrl,
+          rpcUrl: options.rpcUrl ?? '',
           connectorUrl: options.connectorUrl ?? DEFAULT_CONNECTOR_URL,
           createdAt: Date.now(),
         });
@@ -249,7 +267,7 @@ export class WalletCast {
           type: 'walletcast',
           accounts,
           chainId,
-          disconnect: async () => {
+          disconnect: async (_opts?: DisconnectOptions) => {
             sessionManager.clear();
             await dlProvider.disconnect();
           },
