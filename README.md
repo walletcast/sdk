@@ -102,17 +102,24 @@ const accounts = await approval;
 | Package | Description |
 |---------|-------------|
 | `@walletcast/sdk` | Main entry point — `connect()`, QR modal, session management |
-| `@walletcast/sdk/p2p` | Optional P2P exports (WebRTC, broker, signalers) |
 | `@walletcast/deep-link` | Deep link provider, connector page, wallet registry, session manager |
 | `@walletcast/provider` | EIP-1193 provider with RPC routing (reads -> public RPC, signing -> wallet) |
 | `@walletcast/nostr-signaling` | Nostr relay pool + ECDH-encrypted signaling |
-| `@walletcast/broker` | SovereignBroker — orchestrates signaling + WebRTC |
-| `@walletcast/libp2p-signaling` | Rust/WASM libp2p signaler |
-| `@walletcast/webrtc` | WebRTC peer connection + binary message codec |
 | `@walletcast/crypto` | Key generation (secp256k1 via @noble/curves) |
 | `@walletcast/uri` | URI generation and parsing |
 | `@walletcast/qr` | Zero-dependency QR code generator (SVG, canvas, data URL) |
 | `@walletcast/types` | Shared TypeScript interfaces |
+
+### P2P packages (experimental — not yet wired into the SDK)
+
+The following packages implement direct browser-to-browser communication via WebRTC. They are published and tested but **not yet integrated** into `WalletCast.connect()`. The current production flow uses Nostr relays for signaling and message bridging. Direct P2P will be wired in a future release as an optional transport upgrade.
+
+| Package | Description |
+|---------|-------------|
+| `@walletcast/sdk/p2p` | Future P2P exports (WebRTC, broker, signalers) |
+| `@walletcast/broker` | SovereignBroker — orchestrates signaling + WebRTC |
+| `@walletcast/webrtc` | WebRTC peer connection + binary message codec |
+| `@walletcast/libp2p-signaling` | Rust/WASM libp2p signaler |
 
 ## Supported Wallets
 
