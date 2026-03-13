@@ -14,7 +14,8 @@
   },
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts",
-    "test": "echo 'no tests yet'",
+    "build:browser": "tsup --config tsup.browser.config.ts",
+    "test": "vitest run",
     "clean": "rm -rf dist"
   },
   "files": ["dist"],
@@ -26,7 +27,8 @@
     "@walletcast/libp2p-signaling": "workspace:*",
     "@walletcast/webrtc": "workspace:*",
     "@walletcast/broker": "workspace:*",
-    "@walletcast/provider": "workspace:*"
+    "@walletcast/provider": "workspace:*",
+    "@walletcast/qr": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.4.0",

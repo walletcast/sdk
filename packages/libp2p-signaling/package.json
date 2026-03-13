@@ -13,13 +13,16 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "build:wasm": "cd rust && wasm-pack build --target web --out-dir ../wasm",
+    "build:ts": "tsup src/index.ts --format cjs,esm --dts",
+    "build": "npm run build:ts",
     "test": "vitest run",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist wasm"
   },
-  "files": ["dist"],
+  "files": ["dist", "wasm"],
   "dependencies": {
-    "@walletcast/types": "workspace:*"
+    "@walletcast/types": "workspace:*",
+    "@walletcast/crypto": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.4.0",

@@ -31,7 +31,10 @@ export class SovereignBroker implements IBroker {
       config.nostrRelays ?? DEFAULT_NOSTR_RELAYS,
       config.keypair,
     );
-    this.libp2pSignaler = new LibP2PSignaler();
+    this.libp2pSignaler = new LibP2PSignaler(
+      config.libp2pBootnodes ?? [],
+      config.keypair,
+    );
   }
 
   async connect(remoteUri: WalletCastURI): Promise<DataChannelHandle> {

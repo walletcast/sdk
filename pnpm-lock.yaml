@@ -92,6 +92,9 @@ importers:
 
   packages/libp2p-signaling:
     dependencies:
+      '@walletcast/crypto':
+        specifier: workspace:*
+        version: link:../crypto
       '@walletcast/types':
         specifier: workspace:*
         version: link:../types
@@ -153,6 +156,18 @@ importers:
         specifier: ^3.0.0
         version: 3.2.4
 
+  packages/qr:
+    devDependencies:
+      tsup:
+        specifier: ^8.4.0
+        version: 8.5.1(postcss@8.5.8)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4
+
   packages/sdk:
     dependencies:
       '@walletcast/broker':
@@ -170,6 +185,9 @@ importers:
       '@walletcast/provider':
         specifier: workspace:*
         version: link:../provider
+      '@walletcast/qr':
+        specifier: workspace:*
+        version: link:../qr
       '@walletcast/types':
         specifier: workspace:*
         version: link:../types
