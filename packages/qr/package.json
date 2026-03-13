@@ -18,6 +18,9 @@
     "clean": "rm -rf dist"
   },
   "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "tsup": "^8.4.0",
     "typescript": "^5.5.0",

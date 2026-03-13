@@ -220,5 +220,5 @@ Output: `dist/connector.html`. Deploy to any static hosting and pass your URL as
 
 ## Source
 
-- GitHub: [github.com/nicholasgasior/walletcast](https://github.com/nicholasgasior/walletcast)
+- GitHub: [github.com/walletcast/sdk](https://github.com/walletcast/sdk)
 - npm: [@walletcast/sdk](https://www.npmjs.com/package/@walletcast/sdk)

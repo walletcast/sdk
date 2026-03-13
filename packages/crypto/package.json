@@ -18,6 +18,9 @@
     "clean": "rm -rf dist"
   },
   "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@noble/curves": "^1.8.0",
     "@noble/hashes": "^1.7.0",

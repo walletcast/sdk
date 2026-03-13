@@ -174,5 +174,5 @@ Test flow: start dev server, click connect, QR modal appears (if no injected wal
 ## Reference
 
 - [Integration Guide (AGENTS.md)](https://walletcast.net/AGENTS.md)
-- [GitHub](https://github.com/nicholasgasior/walletcast)
+- [GitHub](https://github.com/walletcast/sdk)
 - [npm](https://www.npmjs.com/package/@walletcast/sdk)

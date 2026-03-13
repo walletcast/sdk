@@ -20,6 +20,9 @@
     "clean": "rm -rf dist wasm"
   },
   "files": ["dist", "wasm"],
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@walletcast/types": "workspace:*",
     "@walletcast/crypto": "workspace:*"

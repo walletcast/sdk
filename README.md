@@ -1,6 +1,10 @@
+<p align="center">
+  <img src="https://walletcast.net/assets/logo.png" width="64" alt="WalletCast logo" />
+</p>
+
 # WalletCast
 
-**Connect any wallet to any dapp. No centralized relays. No signups. No tracking.**
+**Like WalletConnect, but without WalletConnect.**
 
 WalletCast is a TypeScript SDK for decentralized wallet-to-dapp communication. It provides end-to-end encrypted connections between wallets and dapps without requiring WalletConnect Cloud accounts, project IDs, or any centralized relay infrastructure.
 
@@ -117,7 +121,7 @@ const accounts = await approval;
 ## Development
 
 ```bash
-git clone https://github.com/nicholasgasior/walletcast
+git clone https://github.com/walletcast/sdk
 cd walletcast
 pnpm install
 pnpm build        # build all packages

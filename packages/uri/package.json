@@ -18,6 +18,9 @@
     "clean": "rm -rf dist"
   },
   "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@walletcast/types": "workspace:*"
   },
