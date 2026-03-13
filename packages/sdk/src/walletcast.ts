@@ -28,8 +28,8 @@ export interface ConnectOptions {
   preferInjected?: boolean;
   /** Session TTL in ms (default: 24h) */
   sessionTTL?: number;
-  /** Modal theme (default: 'dark') */
-  theme?: 'dark' | 'light';
+  /** Modal theme (default: 'dark'). 'system' follows OS prefers-color-scheme. */
+  theme?: 'dark' | 'light' | 'system';
   /** Pre-select a wallet (skip picker) */
   walletId?: WalletId;
 }

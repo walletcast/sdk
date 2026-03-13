@@ -5,7 +5,7 @@ export {
   type DisconnectOptions,
 } from './walletcast.js';
 
-export { QRModal, type QRModalOptions } from './qr-modal.js';
+export { QRModal, type QRModalOptions, type ThemeConfig, type ResolvedTheme } from './qr-modal.js';
 
 // Re-export key types from sub-packages
 export type {
