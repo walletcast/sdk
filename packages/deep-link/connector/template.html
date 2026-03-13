@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WalletCast — Decentralized Wallet Connection</title>
+<link rel="icon" href="assets/logo.png" type="image/png">
 <meta name="description" content="Connect any wallet to any dapp without centralized relays. Open-source, trustless, and private.">
 <style>
   :root {
@@ -355,6 +356,7 @@
     text-align: left; max-height: 200px; overflow-y: auto; line-height: 1.5;
   }
   #log div { word-break: break-all; }
+  .connector-logo { width: 56px; height: 56px; border-radius: 50%; margin-bottom: 1rem; }
   .branding { margin-top: 1.5rem; font-size: 0.7rem; color: var(--text-tertiary); }
   .branding a { color: var(--accent); text-decoration: none; }
 
@@ -701,6 +703,7 @@ WalletCast.<span class="fn">connect</span>({
 <!-- Connector UI -->
 <div class="connector" id="connector">
   <div class="card">
+    <img src="assets/logo.png" alt="WalletCast" class="connector-logo">
     <h1>WalletCast</h1>
     <p class="subtitle">Secure wallet bridge</p>
     <div id="status" class="status-info">Initializing...</div>

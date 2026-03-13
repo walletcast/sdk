@@ -2,6 +2,12 @@
   <img src="https://walletcast.net/assets/logo.png" width="64" alt="WalletCast logo" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/walletcast/sdk/actions/workflows/ci.yml"><img src="https://github.com/walletcast/sdk/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://www.npmjs.com/package/@walletcast/sdk"><img src="https://img.shields.io/npm/v/@walletcast/sdk?color=blue" alt="npm"></a>
+  <a href="https://github.com/walletcast/sdk/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT"></a>
+</p>
+
 # WalletCast
 
 **Like WalletConnect, but without WalletConnect.**

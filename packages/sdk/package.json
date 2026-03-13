@@ -1,6 +1,6 @@
 {
   "name": "@walletcast/sdk",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
@@ -29,7 +29,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
+  "devDependencies": {
     "@walletcast/types": "workspace:*",
     "@walletcast/crypto": "workspace:*",
     "@walletcast/uri": "workspace:*",
@@ -39,9 +39,7 @@
     "@walletcast/broker": "workspace:*",
     "@walletcast/provider": "workspace:*",
     "@walletcast/qr": "workspace:*",
-    "@walletcast/deep-link": "workspace:*"
-  },
-  "devDependencies": {
+    "@walletcast/deep-link": "workspace:*",
     "tsup": "^8.4.0",
     "typescript": "^5.5.0",
     "vitest": "^3.0.0"
