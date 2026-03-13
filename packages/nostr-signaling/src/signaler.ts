@@ -91,25 +91,9 @@ export class NostrSignaler implements ISignaler {
    * Extract the recipient public key from a signaling message.
    */
   private getRecipientPubKey(message: SignalingMessage): string {
-    if (message.kind === 'sdp') {
+    if (message.kind === 'sdp' || message.kind === 'relay') {
       return message.payload.recipientPubKey;
     }
-    // For ICE candidates, the senderPubKey field identifies who is sending,
-    // but we need the *recipient*. By convention, ICE messages should be
-    // addressed to the peer — the caller must set senderPubKey to our key
-    // and we route based on context. For now, we require a recipientPubKey
-    // to be derivable. Since ICEPayload doesn't have recipientPubKey,
-    // we'll use the senderPubKey as a fallback — the caller should ensure
-    // the message is correctly addressed.
-    //
-    // NOTE: In practice, the signaler.publish() for ICE should be called
-    // with the correct recipient context. The senderPubKey in ICEPayload
-    // identifies us, and the recipient is the peer we're sending to.
-    // Since the ICEPayload type doesn't include recipientPubKey, we
-    // store it differently: the caller should wrap ICE in a message
-    // that includes the recipient info. For now we fall back to senderPubKey
-    // which means the caller must override this behavior or the ICEPayload
-    // type should be extended.
     return message.payload.senderPubKey;
   }
 }

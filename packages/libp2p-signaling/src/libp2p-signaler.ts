@@ -137,7 +137,7 @@ export class LibP2PSignaler implements ISignaler {
   }
 
   private getRecipientPubKey(message: SignalingMessage): string {
-    if (message.kind === 'sdp') {
+    if (message.kind === 'sdp' || message.kind === 'relay') {
       return message.payload.recipientPubKey;
     }
     return message.payload.senderPubKey;

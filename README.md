@@ -1,0 +1,161 @@
+# WalletCast
+
+**Connect any wallet to any dapp. No centralized relays. No signups. No tracking.**
+
+WalletCast is a TypeScript SDK for decentralized wallet-to-dapp communication. It provides end-to-end encrypted connections between wallets and dapps without requiring WalletConnect Cloud accounts, project IDs, or any centralized relay infrastructure.
+
+## Why WalletCast
+
+- **No project IDs or signups** — works out of the box
+- **No centralized relays** — uses Nostr relays as a decentralized message bus
+- **End-to-end encrypted** — ECDH key exchange + AES-256-GCM
+- **Works with existing wallets** — MetaMask, Trust Wallet, Coinbase Wallet, Phantom, OKX
+- **EIP-1193 compatible** — drop-in replacement for `window.ethereum`
+- **Zero backend** — no server required, pure client-side
+- **Auto-detection** — detects injected wallets, only shows QR when needed
+- **Session persistence** — reconnects silently on page reload (24h TTL)
+
+## How It Works
+
+```
+Desktop Dapp <──encrypted Nostr──> Connector Page (in wallet browser)
+                                     | window.ethereum
+                                   Mobile Wallet
+```
+
+1. Dapp calls `WalletCast.connect()` which checks for injected wallets first
+2. If no injected wallet, a Shadow DOM QR modal appears with wallet picker
+3. User scans the QR — their wallet opens a connector page in its in-app browser
+4. The connector detects `window.ethereum`, bridges all RPC calls over encrypted Nostr messages
+5. Session is persisted on both sides — page reloads reconnect silently via ping/pong
+
+## Quick Start
+
+```bash
+npm install @walletcast/sdk
+```
+
+### One-liner connection (recommended)
+
+```typescript
+import { WalletCast } from '@walletcast/sdk';
+
+// Auto-detects injected wallet or shows QR modal
+const { provider, accounts, type, disconnect } = await WalletCast.connect({
+  rpcUrl: 'https://eth.llamarpc.com',
+  chainId: 1,
+});
+
+console.log(`Connected via ${type}:`, accounts);
+
+// Use as standard EIP-1193 provider
+const chainId = await provider.request({ method: 'eth_chainId' });
+
+// Or wrap with ethers.js
+import { BrowserProvider } from 'ethers';
+const signer = await new BrowserProvider(provider).getSigner();
+
+// Disconnect when done
+await disconnect();
+```
+
+`WalletCast.connect()` handles everything:
+- **Tries session restore first** — if a previous session exists, silently reconnects via ping/pong
+- **Checks for injected wallets** — `window.ethereum` + EIP-6963
+- **Falls back to QR modal** — Shadow DOM modal with wallet picker + QR codes
+- Returns `type: 'injected' | 'walletcast'` so you know which path was taken
+
+### Lower-level API
+
+For custom UI or more control:
+
+```typescript
+import { WalletCast, WALLET_REGISTRY, toSVGDataURL } from '@walletcast/sdk';
+
+const { provider, links, keypair, relays, approval } = WalletCast.createDeepLinkProvider({
+  connectorUrl: 'https://machinemade.name/walletcast/',
+  rpcUrl: 'https://eth.llamarpc.com',
+  chainId: 1,
+});
+
+// Show your own QR code for MetaMask
+const qrDataUrl = toSVGDataURL(links.metamask.universal, {
+  moduleSize: 6,
+  foreground: '#6366f1',
+  background: '#141414',
+});
+document.querySelector('#qr').src = qrDataUrl;
+
+const accounts = await approval;
+```
+
+## Packages
+
+| Package | Description |
+|---------|-------------|
+| `@walletcast/sdk` | Main entry point — `connect()`, QR modal, session management |
+| `@walletcast/sdk/p2p` | Optional P2P exports (WebRTC, broker, signalers) |
+| `@walletcast/deep-link` | Deep link provider, connector page, wallet registry, session manager |
+| `@walletcast/provider` | EIP-1193 provider with RPC routing (reads -> public RPC, signing -> wallet) |
+| `@walletcast/nostr-signaling` | Nostr relay pool + ECDH-encrypted signaling |
+| `@walletcast/broker` | SovereignBroker — orchestrates signaling + WebRTC |
+| `@walletcast/libp2p-signaling` | Rust/WASM libp2p signaler |
+| `@walletcast/webrtc` | WebRTC peer connection + binary message codec |
+| `@walletcast/crypto` | Key generation (secp256k1 via @noble/curves) |
+| `@walletcast/uri` | URI generation and parsing |
+| `@walletcast/qr` | Zero-dependency QR code generator (SVG, canvas, data URL) |
+| `@walletcast/types` | Shared TypeScript interfaces |
+
+## Supported Wallets
+
+| Wallet | Deep Link |
+|--------|-----------|
+| MetaMask | Yes |
+| Trust Wallet | Yes (Android) |
+| Coinbase Wallet | Yes |
+| Phantom | Yes |
+| OKX Wallet | Yes |
+
+## Development
+
+```bash
+git clone https://github.com/nicholasgasior/walletcast
+cd walletcast
+pnpm install
+pnpm build        # build all packages
+pnpm test         # run all test suites
+```
+
+### Useful commands
+
+```bash
+pnpm --filter @walletcast/sdk build           # build a specific package
+pnpm --filter @walletcast/sdk build:browser   # browser bundle (SDK only)
+pnpm --filter @walletcast/deep-link build:connector  # self-contained connector HTML
+pnpm typecheck                                 # type-check all packages
+pnpm lint                                      # lint all packages
+```
+
+## Connector Page
+
+The connector page is a self-contained HTML file (~55KB) that runs inside a wallet's in-app browser. It bridges `window.ethereum` calls over encrypted Nostr messages to the desktop dapp.
+
+Features:
+- **Session persistence** — survives page reloads, 24h TTL
+- **Disconnect button** — sends disconnect message to dapp, clears session
+- **Auto-detection** — EIP-6963 + `window.ethereum` with timeout fallback
+
+- **Live:** [machinemade.name/walletcast/](https://machinemade.name/walletcast/)
+- **Build:** `pnpm --filter @walletcast/deep-link build:connector`
+- **Output:** `packages/deep-link/dist/connector.html`
+
+You can self-host the connector page — just deploy the built HTML file to any static hosting.
+
+## Examples
+
+- **`apps/demo-dapp/`** — Vite-based demo with `WalletCast.connect()`
+- **`examples/vanilla-connect/`** — Vanilla JS example, no build step required
+
+## License
+
+MIT

@@ -6,4 +6,9 @@ export {
   parseSignalingEvent,
   SIGNALING_EVENT_KIND,
   getNostrPubKeyHex,
+  hexToBytes,
+  bytesToHex,
+  deriveSharedKey,
+  encrypt,
+  decrypt,
 } from './events.js';

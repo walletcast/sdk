@@ -20,14 +20,18 @@ const DEFAULT_NOSTR_RELAYS = [
 const DEFAULT_TIMEOUT = 15_000;
 
 export class SovereignBroker implements IBroker {
-  private nostrSignaler: NostrSignaler;
+  private _nostrSignaler: NostrSignaler;
   private libp2pSignaler: LibP2PSignaler;
   private peerConnection: WalletCastPeerConnection | null = null;
   private timeout: number;
 
+  get nostrSignaler(): NostrSignaler {
+    return this._nostrSignaler;
+  }
+
   constructor(private config: BrokerConfig) {
     this.timeout = config.timeout ?? DEFAULT_TIMEOUT;
-    this.nostrSignaler = new NostrSignaler(
+    this._nostrSignaler = new NostrSignaler(
       config.nostrRelays ?? DEFAULT_NOSTR_RELAYS,
       config.keypair,
     );
@@ -58,7 +62,7 @@ export class SovereignBroker implements IBroker {
     };
 
     await Promise.allSettled([
-      this.nostrSignaler.publish(offerMessage),
+      this._nostrSignaler.publish(offerMessage),
       this.libp2pSignaler.publish(offerMessage).catch(() => {}),
     ]);
 
@@ -76,7 +80,7 @@ export class SovereignBroker implements IBroker {
   async listen(
     onIncoming: (channel: DataChannelHandle) => void,
   ): Promise<void> {
-    await this.nostrSignaler.subscribe(
+    await this._nostrSignaler.subscribe(
       this.config.keypair.publicKeyHex,
       async (msg) => {
         if (msg.kind !== 'sdp' || msg.payload.type !== 'offer') return;
@@ -103,7 +107,7 @@ export class SovereignBroker implements IBroker {
           };
 
           await Promise.allSettled([
-            this.nostrSignaler.publish(answerMessage),
+            this._nostrSignaler.publish(answerMessage),
             this.libp2pSignaler.publish(answerMessage).catch(() => {}),
           ]);
 
@@ -117,7 +121,7 @@ export class SovereignBroker implements IBroker {
   }
 
   async destroy(): Promise<void> {
-    await this.nostrSignaler.destroy();
+    await this._nostrSignaler.destroy();
     await this.libp2pSignaler.destroy();
     if (this.peerConnection) {
       this.peerConnection.close();
@@ -151,7 +155,7 @@ export class SovereignBroker implements IBroker {
         }
       };
 
-      this.nostrSignaler
+      this._nostrSignaler
         .subscribe(myPubKey, onAnswer)
         .then((unsub) => unsubs.push(unsub))
         .catch(() => {});

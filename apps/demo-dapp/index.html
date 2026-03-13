@@ -71,17 +71,11 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
-    .uri-box {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.75rem;
-      font-family: monospace;
-      font-size: 0.75rem;
-      word-break: break-all;
-      color: var(--accent);
-      margin-top: 1rem;
+    .disconnect-btn {
+      background: #7f1d1d;
+      margin-top: 0.75rem;
     }
+    .disconnect-btn:hover { background: #991b1b; }
     .status {
       display: flex;
       align-items: center;
@@ -116,12 +110,22 @@
     #log div { padding: 0.1rem 0; }
     #log .error { color: var(--error); }
     #log .success { color: var(--success); }
+    .type-badge {
+      display: inline-block;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.15rem 0.5rem;
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-family: monospace;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>WalletCast</h1>
-    <p class="subtitle">Decentralized wallet connection — no relay servers</p>
+    <p class="subtitle">Decentralized wallet connection — auto-detects injected wallet or shows QR modal</p>
 
     <div class="card">
       <h2>Connection</h2>
@@ -129,21 +133,23 @@
         <div class="dot" id="statusDot"></div>
         <span id="statusText">Disconnected</span>
       </div>
-      <button id="initBtn">Generate Connection URI</button>
-      <div id="uriContainer" style="display:none">
-        <div class="uri-box" id="uriDisplay"></div>
-      </div>
+      <button id="connectBtn">Connect Wallet</button>
+      <button id="disconnectBtn" class="disconnect-btn" style="display:none">Disconnect</button>
     </div>
 
     <div class="card" id="accountCard" style="display:none">
       <h2>Wallet Info</h2>
       <div class="info-row">
         <span class="info-label">Account</span>
-        <span class="info-value" id="accountAddr">—</span>
+        <span class="info-value" id="accountAddr">-</span>
       </div>
       <div class="info-row">
         <span class="info-label">Chain ID</span>
-        <span class="info-value" id="chainId">—</span>
+        <span class="info-value" id="chainId">-</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Connection</span>
+        <span class="info-value"><span class="type-badge" id="connType">-</span></span>
       </div>
     </div>
 

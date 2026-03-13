@@ -3,6 +3,7 @@ export enum MessageType {
   RPC_RESPONSE = 0x02,
   PING = 0x03,
   PONG = 0x04,
+  TOPIC_MESSAGE = 0x05,
 }
 
 export interface MessageEnvelope {

@@ -185,4 +185,4 @@ export async function parseSignalingEvent(
   }
 }
 
-export { getNostrPubKeyHex, hexToBytes, bytesToHex, deriveSharedKey };
+export { getNostrPubKeyHex, hexToBytes, bytesToHex, deriveSharedKey, encrypt, decrypt };

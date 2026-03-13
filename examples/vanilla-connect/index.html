@@ -10,25 +10,29 @@
     p { color: #6b7280; margin-bottom: 2rem; font-size: 0.875rem; }
     button { background: #4f46e5; color: #fff; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-size: 1rem; }
     button:disabled { opacity: 0.4; cursor: not-allowed; }
-    #uri { word-break: break-all; background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 0.75rem; color: #818cf8; font-size: 0.75rem; margin-top: 1rem; display: none; }
+    .disconnect-btn { background: #7f1d1d; margin-left: 0.5rem; }
+    .disconnect-btn:hover { background: #991b1b; }
+    .btn-row { display: flex; gap: 0.5rem; }
+    #account { margin-top: 1.5rem; display: none; }
+    #account span { color: #818cf8; }
     #log { margin-top: 2rem; font-size: 0.8rem; line-height: 1.8; color: #6b7280; }
     #log .ok  { color: #4ade80; }
     #log .err { color: #f87171; }
-    #account { margin-top: 1.5rem; display: none; }
-    #account span { color: #818cf8; }
+    .type-badge { background: #1a1a1a; border: 1px solid #333; border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 0.75rem; color: #818cf8; }
   </style>
 </head>
 <body>
   <h1>WalletCast</h1>
-  <p>Minimal vanilla-JS wallet connection example — no build step required.</p>
+  <p>Minimal vanilla-JS wallet connection — no build step required.<br>
+  Auto-detects injected wallets. Shows QR modal if none found.</p>
 
-  <button id="connect">Generate Connection URI</button>
-
-  <div id="qr" style="margin-top: 1rem; display: none; text-align: center;"></div>
-  <div id="uri"></div>
+  <div class="btn-row">
+    <button id="connect">Connect Wallet</button>
+    <button id="disconnect" class="disconnect-btn" style="display:none">Disconnect</button>
+  </div>
 
   <div id="account">
-    Account: <span id="addr"></span> &nbsp;|&nbsp; Chain: <span id="chain"></span>
+    Account: <span id="addr"></span> &nbsp;|&nbsp; Chain: <span id="chain"></span> &nbsp;|&nbsp; <span class="type-badge" id="connType"></span>
   </div>
 
   <div id="log"></div>
@@ -36,16 +40,17 @@
   <!--
     Import WalletCast from the built SDK.
     Run from the repo root:
-      pnpm build                        # build all packages
-      pnpm --filter @walletcast/sdk build:browser   # create browser bundle
-      npx serve .                       # serve from repo root (preserves relative paths)
-    Once published to npm you can replace the import path with:
-      import { ... } from 'https://esm.sh/@walletcast/sdk';
+      pnpm build
+      pnpm --filter @walletcast/sdk build:browser
+      npx serve .
+    Once published to npm:
+      import { WalletCast } from 'https://esm.sh/@walletcast/sdk';
   -->
   <script type="module">
-    import { WalletCast, generateKeyPair, generateURI, toSVGDataURL } from '../../packages/sdk/dist/browser/index.js';
+    import { WalletCast } from '../../packages/sdk/dist/browser/index.js';
 
     const $ = (id) => document.getElementById(id);
+    let disconnectFn = null;
 
     const log = (msg, cls = '') => {
       const div = document.createElement('div');
@@ -56,66 +61,58 @@
 
     $('connect').addEventListener('click', async () => {
       $('connect').disabled = true;
+      $('connect').textContent = 'Connecting...';
 
-      // 1. Generate an ephemeral keypair for this session
-      const keypair = generateKeyPair();
-      log(`Keypair: ${keypair.publicKeyHex.slice(0, 20)}…`, 'ok');
+      try {
+        const result = await WalletCast.connect({
+          rpcUrl: 'https://eth.llamarpc.com',
+          chainId: 1,
+        });
 
-      // 2. Build the walletcast: URI — share this with the wallet (e.g. as a QR code)
-      const uri = generateURI({
-        publicKey: keypair.publicKeyHex,
-        relayUrls: ['wss://relay.damus.io', 'wss://nos.lol'],
-      });
+        disconnectFn = result.disconnect;
+        const addr = result.accounts[0];
 
-      $('uri').textContent = uri;
-      $('uri').style.display = 'block';
-
-      // 2b. Render QR code (zero-dependency, built into the SDK)
-      const qrDataURL = toSVGDataURL(uri, {
-        moduleSize: 6, quietZone: 4,
-        foreground: '#818cf8', background: '#1a1a1a',
-      });
-      const img = document.createElement('img');
-      img.src = qrDataURL;
-      img.alt = 'Scan with WalletCast wallet';
-      img.style.cssText = 'max-width: 280px; border-radius: 8px;';
-      $('qr').innerHTML = '';
-      $('qr').appendChild(img);
-      $('qr').style.display = 'block';
-
-      log('URI ready — scan with your WalletCast-compatible wallet', 'ok');
-
-      // 3. Create an EIP-1193 provider that uses the same keypair
-      const provider = WalletCast.createProvider({
-        keypair,
-        rpcUrl: 'https://eth.llamarpc.com',
-        chainId: 1,
-        nostrRelays: ['wss://relay.damus.io', 'wss://nos.lol'],
-      });
-
-      // 4. React to wallet events
-      provider.on('connect', ({ chainId }) => {
-        log(`Connected on chain ${parseInt(chainId, 16)}`, 'ok');
-        $('chain').textContent = parseInt(chainId, 16);
+        log(`Connected via ${result.type}! ${addr}`, 'ok');
+        $('addr').textContent = `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+        $('chain').textContent = parseInt(result.chainId, 16);
+        $('connType').textContent = result.type;
         $('account').style.display = 'block';
-      });
+        $('connect').style.display = 'none';
+        $('disconnect').style.display = 'inline-block';
 
-      provider.on('accountsChanged', ([addr]) => {
-        if (addr) {
-          log(`Account: ${addr}`, 'ok');
-          $('addr').textContent = `${addr.slice(0, 6)}…${addr.slice(-4)}`;
-        }
-      });
+        result.provider.on('accountsChanged', ([a]) => {
+          if (a) {
+            $('addr').textContent = `${a.slice(0, 6)}...${a.slice(-4)}`;
+            log(`Account: ${a}`, 'ok');
+          }
+        });
 
-      provider.on('disconnect', () => {
-        log('Wallet disconnected', 'err');
-        $('account').style.display = 'none';
+        result.provider.on('disconnect', () => {
+          log('Disconnected', 'err');
+          $('account').style.display = 'none';
+          $('connect').style.display = 'inline-block';
+          $('connect').disabled = false;
+          $('connect').textContent = 'Connect Wallet';
+          $('disconnect').style.display = 'none';
+        });
+      } catch (err) {
+        log(`Error: ${err.message}`, 'err');
         $('connect').disabled = false;
-        $('connect').textContent = 'Generate Connection URI';
-      });
+        $('connect').textContent = 'Connect Wallet';
+      }
+    });
 
-      log('Waiting for wallet to scan and respond…');
-      $('connect').textContent = 'Waiting…';
+    $('disconnect').addEventListener('click', async () => {
+      if (disconnectFn) {
+        await disconnectFn();
+        disconnectFn = null;
+      }
+      $('account').style.display = 'none';
+      $('connect').style.display = 'inline-block';
+      $('connect').disabled = false;
+      $('connect').textContent = 'Connect Wallet';
+      $('disconnect').style.display = 'none';
+      log('Disconnected');
     });
 
     log('WalletCast vanilla example loaded');

@@ -1,6 +1,6 @@
 {
-  "name": "@walletcast/sdk",
-  "version": "0.2.0",
+  "name": "@walletcast/deep-link",
+  "version": "0.1.0",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
@@ -10,33 +10,27 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    },
-    "./p2p": {
-      "types": "./dist/p2p.d.ts",
-      "import": "./dist/p2p.js",
-      "require": "./dist/p2p.cjs"
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts src/p2p.ts --format cjs,esm --dts",
-    "build:browser": "tsup --config tsup.browser.config.ts",
+    "build": "tsup src/index.ts --format cjs,esm --dts && node scripts/build-connector.mjs",
+    "build:lib": "tsup src/index.ts --format cjs,esm --dts",
+    "build:connector": "node scripts/build-connector.mjs",
     "test": "vitest run",
     "clean": "rm -rf dist"
   },
   "files": ["dist"],
   "dependencies": {
     "@walletcast/types": "workspace:*",
-    "@walletcast/crypto": "workspace:*",
-    "@walletcast/uri": "workspace:*",
     "@walletcast/nostr-signaling": "workspace:*",
-    "@walletcast/libp2p-signaling": "workspace:*",
-    "@walletcast/webrtc": "workspace:*",
-    "@walletcast/broker": "workspace:*",
     "@walletcast/provider": "workspace:*",
-    "@walletcast/qr": "workspace:*",
-    "@walletcast/deep-link": "workspace:*"
+    "@walletcast/crypto": "workspace:*",
+    "@noble/curves": "^1.8.0",
+    "@noble/hashes": "^1.7.0",
+    "nostr-tools": "^2.10.0"
   },
   "devDependencies": {
+    "esbuild": "^0.24.0",
     "tsup": "^8.4.0",
     "typescript": "^5.5.0",
     "vitest": "^3.0.0"

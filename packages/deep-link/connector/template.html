@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WalletCast — Decentralized Wallet Connection</title>
+<meta name="description" content="Connect any wallet to any dapp without centralized relays. Open-source, trustless, and private.">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f0f23;
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  /* --- Connector UI (shown when hash params present) --- */
+  .connector {
+    display: none;
+    max-width: 420px;
+    width: 100%;
+  }
+  .connector.active { display: block; }
+  .card {
+    background: #1a1a2e;
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  }
+  .card h1 { font-size: 1.25rem; margin-bottom: 0.5rem; color: #818cf8; }
+  .card .subtitle { font-size: 0.85rem; color: #94a3b8; margin-bottom: 1.5rem; }
+  #status {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s;
+  }
+  .status-info { background: #1e293b; color: #94a3b8; }
+  .status-success { background: #064e3b; color: #6ee7b7; }
+  .status-error { background: #7f1d1d; color: #fca5a5; }
+  #log {
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 0.75rem;
+    color: #64748b;
+    text-align: left;
+    max-height: 200px;
+    overflow-y: auto;
+    line-height: 1.5;
+  }
+  #log div { word-break: break-all; }
+  .branding {
+    margin-top: 1.5rem;
+    font-size: 0.7rem;
+    color: #475569;
+  }
+  .branding a { color: #6366f1; text-decoration: none; }
+
+  /* --- Landing Page (shown when no hash params) --- */
+  .landing { display: none; max-width: 640px; width: 100%; text-align: center; }
+  .landing.active { display: block; }
+
+  .landing .logo {
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #818cf8 0%, #6366f1 40%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+  }
+  .landing .tagline {
+    font-size: 1.1rem;
+    color: #94a3b8;
+    margin-bottom: 2.5rem;
+    line-height: 1.5;
+  }
+  .landing .tagline strong {
+    color: #c4b5fd;
+    font-weight: 600;
+  }
+
+  .features {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+    text-align: left;
+  }
+  @media (max-width: 480px) {
+    .features { grid-template-columns: 1fr; }
+  }
+  .feature {
+    background: #1a1a2e;
+    border: 1px solid #2a2a3e;
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: border-color 0.2s;
+  }
+  .feature:hover { border-color: #6366f1; }
+  .feature .icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+  .feature h3 {
+    font-size: 0.9rem;
+    color: #e2e8f0;
+    margin-bottom: 0.35rem;
+  }
+  .feature p {
+    font-size: 0.8rem;
+    color: #64748b;
+    line-height: 1.4;
+  }
+
+  .how-it-works {
+    background: #1a1a2e;
+    border: 1px solid #2a2a3e;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    text-align: left;
+  }
+  .how-it-works h2 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #818cf8;
+    margin-bottom: 1rem;
+  }
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .step {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #6366f1;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step p {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    line-height: 1.4;
+    padding-top: 2px;
+  }
+  .step code {
+    background: #0f172a;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #818cf8;
+  }
+
+  .cta-row {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.65rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .cta-primary {
+    background: #6366f1;
+    color: #fff;
+  }
+  .cta-primary:hover { background: #4f46e5; }
+  .cta-secondary {
+    background: #1a1a2e;
+    border: 1px solid #2a2a3e;
+    color: #e2e8f0;
+  }
+  .cta-secondary:hover { border-color: #6366f1; }
+
+  .wallets {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+  .wallet-badge {
+    background: #1a1a2e;
+    border: 1px solid #2a2a3e;
+    border-radius: 8px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    color: #94a3b8;
+  }
+
+  .landing .footer {
+    font-size: 0.75rem;
+    color: #475569;
+    line-height: 1.6;
+  }
+  .landing .footer a { color: #6366f1; text-decoration: none; }
+  .landing .footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<!-- Landing Page -->
+<div class="landing" id="landing">
+  <div class="logo">WalletCast</div>
+  <p class="tagline">
+    Connect any wallet to any dapp.<br>
+    <strong>No centralized relays. No signups. No tracking.</strong>
+  </p>
+
+  <div class="features">
+    <div class="feature">
+      <div class="icon">&#x1f310;</div>
+      <h3>Fully Decentralized</h3>
+      <p>Uses Nostr relays as an encrypted message bus. No WalletConnect Cloud, no project IDs.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">&#x1f512;</div>
+      <h3>End-to-End Encrypted</h3>
+      <p>ECDH key exchange + AES-256-GCM. Only the dapp and wallet can read messages.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">&#x1f4f1;</div>
+      <h3>Works With Existing Wallets</h3>
+      <p>MetaMask, Trust Wallet, Coinbase, Phantom, OKX &mdash; no extensions needed.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">&#x26a1;</div>
+      <h3>Zero Dependencies</h3>
+      <p>Single ~46KB HTML file. No build step, no server, no backend. Pure client-side.</p>
+    </div>
+  </div>
+
+  <div class="how-it-works">
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <p>Dapp generates an ephemeral keypair and shows a <strong>QR code</strong> with a wallet-specific deep link.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <p>User scans the QR &mdash; their wallet opens this connector page in its <strong>in-app browser</strong>.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <p>The connector detects <code>window.ethereum</code>, requests accounts, and bridges all RPC calls over <strong>encrypted Nostr messages</strong>.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <p>Dapp receives signed transactions and wallet events in real-time. <strong>No relay signup. No tracking.</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="wallets">
+    <span class="wallet-badge">MetaMask</span>
+    <span class="wallet-badge">Trust Wallet</span>
+    <span class="wallet-badge">Coinbase Wallet</span>
+    <span class="wallet-badge">Phantom</span>
+    <span class="wallet-badge">OKX Wallet</span>
+  </div>
+
+  <div class="cta-row">
+    <a class="cta cta-primary" href="https://github.com/nicholasgasior/walletcast">GitHub</a>
+    <a class="cta cta-secondary" href="https://www.npmjs.com/package/@walletcast/sdk">npm</a>
+  </div>
+
+  <div class="cta-row" style="margin-bottom: 0.5rem;">
+    <a class="cta cta-secondary" target="_blank" href="AGENTS.md">Integration Guide</a>
+    <a class="cta cta-secondary" target="_blank" href="SKILL.md">Claude Code Skill</a>
+  </div>
+
+  <div class="footer">
+    Open-source &middot; MIT License<br>
+    <a href="https://github.com/nicholasgasior/walletcast">github.com/nicholasgasior/walletcast</a>
+  </div>
+</div>
+
+<!-- Connector UI -->
+<div class="connector" id="connector">
+  <div class="card">
+    <h1>WalletCast</h1>
+    <p class="subtitle">Secure wallet bridge</p>
+    <div id="status" class="status-info">Initializing...</div>
+    <div id="log"></div>
+    <button id="disconnectBtn" style="display:none;margin-top:1rem;width:100%;padding:0.65rem;border:none;border-radius:8px;background:#7f1d1d;color:#fca5a5;font-size:0.9rem;font-weight:600;cursor:pointer;transition:background 0.2s">Disconnect</button>
+    <p class="branding">Powered by <a href="https://github.com/nicholasgasior/walletcast">WalletCast</a></p>
+  </div>
+</div>
+
+<script>/* CONNECTOR_JS */</script>
+</body>
+</html>

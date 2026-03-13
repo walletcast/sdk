@@ -14,9 +14,17 @@ export interface ICEPayload {
   senderPubKey: string;
 }
 
+export interface RelayPayload {
+  topic: string;
+  message: string;
+  senderPubKey: string;
+  recipientPubKey: string;
+}
+
 export type SignalingMessage =
   | { kind: 'sdp'; payload: SDPPayload }
-  | { kind: 'ice'; payload: ICEPayload };
+  | { kind: 'ice'; payload: ICEPayload }
+  | { kind: 'relay'; payload: RelayPayload };
 
 export interface ISignaler {
   publish(message: SignalingMessage): Promise<void>;
