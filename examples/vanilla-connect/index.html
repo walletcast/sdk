@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WalletCast — Vanilla Example</title>
+  <style>
+    body { font-family: monospace; max-width: 640px; margin: 4rem auto; padding: 1rem; background: #0d0d0d; color: #d4d4d4; }
+    h1 { color: #818cf8; margin-bottom: 0.25rem; }
+    p { color: #6b7280; margin-bottom: 2rem; font-size: 0.875rem; }
+    button { background: #4f46e5; color: #fff; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    #uri { word-break: break-all; background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 0.75rem; color: #818cf8; font-size: 0.75rem; margin-top: 1rem; display: none; }
+    #log { margin-top: 2rem; font-size: 0.8rem; line-height: 1.8; color: #6b7280; }
+    #log .ok  { color: #4ade80; }
+    #log .err { color: #f87171; }
+    #account { margin-top: 1.5rem; display: none; }
+    #account span { color: #818cf8; }
+  </style>
+</head>
+<body>
+  <h1>WalletCast</h1>
+  <p>Minimal vanilla-JS wallet connection example — no build step required.</p>
+
+  <button id="connect">Generate Connection URI</button>
+
+  <div id="qr" style="margin-top: 1rem; display: none; text-align: center;"></div>
+  <div id="uri"></div>
+
+  <div id="account">
+    Account: <span id="addr"></span> &nbsp;|&nbsp; Chain: <span id="chain"></span>
+  </div>
+
+  <div id="log"></div>
+
+  <!--
+    Import WalletCast from the built SDK.
+    Run from the repo root:
+      pnpm build                        # build all packages
+      pnpm --filter @walletcast/sdk build:browser   # create browser bundle
+      npx serve .                       # serve from repo root (preserves relative paths)
+    Once published to npm you can replace the import path with:
+      import { ... } from 'https://esm.sh/@walletcast/sdk';
+  -->
+  <script type="module">
+    import { WalletCast, generateKeyPair, generateURI, toSVGDataURL } from '../../packages/sdk/dist/browser/index.js';
+
+    const $ = (id) => document.getElementById(id);
+
+    const log = (msg, cls = '') => {
+      const div = document.createElement('div');
+      div.className = cls;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      $('log').prepend(div);
+    };
+
+    $('connect').addEventListener('click', async () => {
+      $('connect').disabled = true;
+
+      // 1. Generate an ephemeral keypair for this session
+      const keypair = generateKeyPair();
+      log(`Keypair: ${keypair.publicKeyHex.slice(0, 20)}…`, 'ok');
+
+      // 2. Build the walletcast: URI — share this with the wallet (e.g. as a QR code)
+      const uri = generateURI({
+        publicKey: keypair.publicKeyHex,
+        relayUrls: ['wss://relay.damus.io', 'wss://nos.lol'],
+      });
+
+      $('uri').textContent = uri;
+      $('uri').style.display = 'block';
+
+      // 2b. Render QR code (zero-dependency, built into the SDK)
+      const qrDataURL = toSVGDataURL(uri, {
+        moduleSize: 6, quietZone: 4,
+        foreground: '#818cf8', background: '#1a1a1a',
+      });
+      const img = document.createElement('img');
+      img.src = qrDataURL;
+      img.alt = 'Scan with WalletCast wallet';
+      img.style.cssText = 'max-width: 280px; border-radius: 8px;';
+      $('qr').innerHTML = '';
+      $('qr').appendChild(img);
+      $('qr').style.display = 'block';
+
+      log('URI ready — scan with your WalletCast-compatible wallet', 'ok');
+
+      // 3. Create an EIP-1193 provider that uses the same keypair
+      const provider = WalletCast.createProvider({
+        keypair,
+        rpcUrl: 'https://eth.llamarpc.com',
+        chainId: 1,
+        nostrRelays: ['wss://relay.damus.io', 'wss://nos.lol'],
+      });
+
+      // 4. React to wallet events
+      provider.on('connect', ({ chainId }) => {
+        log(`Connected on chain ${parseInt(chainId, 16)}`, 'ok');
+        $('chain').textContent = parseInt(chainId, 16);
+        $('account').style.display = 'block';
+      });
+
+      provider.on('accountsChanged', ([addr]) => {
+        if (addr) {
+          log(`Account: ${addr}`, 'ok');
+          $('addr').textContent = `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+        }
+      });
+
+      provider.on('disconnect', () => {
+        log('Wallet disconnected', 'err');
+        $('account').style.display = 'none';
+        $('connect').disabled = false;
+        $('connect').textContent = 'Generate Connection URI';
+      });
+
+      log('Waiting for wallet to scan and respond…');
+      $('connect').textContent = 'Waiting…';
+    });
+
+    log('WalletCast vanilla example loaded');
+  </script>
+</body>
+</html>

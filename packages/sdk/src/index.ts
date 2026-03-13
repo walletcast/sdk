@@ -36,3 +36,5 @@ export {
   encodeEnvelope,
   decodeEnvelope,
 } from '@walletcast/webrtc';
+export { encodeQR, renderSVG, renderCanvas, toSVGDataURL } from '@walletcast/qr';
+export type { QRCode, QROptions, SVGOptions, CanvasOptions } from '@walletcast/qr';

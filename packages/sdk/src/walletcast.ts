@@ -3,6 +3,8 @@ import { generateKeyPair } from '@walletcast/crypto';
 import { parseURI, generateURI, type GenerateURIOptions } from '@walletcast/uri';
 import { SovereignBroker } from '@walletcast/broker';
 import { WalletCastProvider } from '@walletcast/provider';
+import { toSVGDataURL } from '@walletcast/qr';
+import type { QROptions, SVGOptions } from '@walletcast/qr';
 import { DEFAULT_NOSTR_RELAYS, DEFAULT_ICE_SERVERS } from './defaults.js';
 
 export interface WalletCastOptions {
@@ -39,5 +41,9 @@ export class WalletCast {
 
   static generateKeyPair(): KeyPair {
     return generateKeyPair();
+  }
+
+  static toQRDataURL(data: string, options?: QROptions & SVGOptions): string {
+    return toSVGDataURL(data, options);
   }
 }
